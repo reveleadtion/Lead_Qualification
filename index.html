@@ -389,6 +389,63 @@ main {
 }
 .result-body strong { color: var(--text); font-weight: 400; }
 
+/* ── Unmatch explore cards ───────────────────────────────────────────── */
+.explore-section { margin-top: 24px; width: 100%; }
+.explore-label {
+  font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text2); margin-bottom: 12px; display: block;
+}
+.explore-cards { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.explore-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+.explore-card:hover { border-color: var(--gold-bdr); background: var(--surface2); }
+.explore-card-label {
+  font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 5px; display: block;
+}
+.explore-card-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px; font-weight: 400; color: var(--text);
+  line-height: 1.3; margin-bottom: 3px;
+}
+.explore-card-desc { font-size: 12px; color: var(--text2); line-height: 1.5; }
+.explore-card-arrow { float: right; color: var(--gold); font-size: 16px; margin-top: -20px; }
+
+/* Session perks chips */
+.perks-grid {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin: 16px 0 20px;
+}
+.perk-chip {
+  font-size: 11px; color: var(--text2);
+  border: 1px solid var(--border);
+  border-radius: 100px; padding: 5px 12px;
+  line-height: 1;
+}
+.perk-chip.highlight { color: var(--gold); border-color: var(--gold-bdr); background: var(--gold-dim); }
+
+/* Interested CTA — ghost primary */
+.btn-future-session {
+  width: 100%; background: var(--cta); color: var(--cta-text);
+  border: none; border-radius: 4px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-weight: 600; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 16px; cursor: pointer; transition: opacity 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-future-session:hover { opacity: 0.85; }
+
 /* ── Inquire Now bar (qualified + early maternity screens) ───────────── */
 .inquire-bar {
   width: 100%; margin: 18px 0 4px;
@@ -612,12 +669,12 @@ const STEPS = [
     hint: 'Sessions start at $1,290 — fully all-inclusive. Hair, makeup, wardrobe, and every detail taken care of for you. Average client investment is $3,000.',
     options: [
       { value: 'yes',   label: 'Yes, that works for me', sub: null },
-      { value: 'learn', label: "I'd like to know more first", sub: null },
-      { value: 'no',    label: "That's outside my budget right now", sub: null },
+      { value: 'learn', label: "I\'d like to know more first", sub: null },
+      { value: 'no',    label: "That\'s outside my budget right now", sub: null },
     ]
   },
   { id: 'contact', type: 'contact', label: "Almost there.",
-    hint: "We'll follow up within one business day.",
+    hint: "We\'ll follow up within one business day.",
     // Show contact for all qualified paths — tooEarly goes here too (routes to Klaviyo after)
     // Skip only when budget declined, experience panel chosen, or timing truly unqualified
     showIf: () => state.budget !== 'no' && state.budget !== 'learn'
@@ -655,7 +712,7 @@ function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 // =====================================================================
 
 // Returns the first Aug 1 that is >= today.
-// If today is already Aug 1 or later in the current year, returns next year's Aug 1.
+// If today is already Aug 1 or later in the current year, returns next year\'s Aug 1.
 function firstAvailableDate() {
   const today = new Date(); today.setHours(0,0,0,0);
   const thisYearAug1 = new Date(today.getFullYear(), 7, 1); // month 7 = August (0-indexed)
@@ -677,14 +734,14 @@ function qualifyDueDate(dueDateStr) {
       return { valid: 'unqualified', reason: 'past32' };
     }
 
-    // Will be past 32 weeks by the time we open — can't fit them in
+    // Will be past 32 weeks by the time we open — can\'t fit them in
     if (weeksAtOpen > 32) {
       return { valid: 'unqualified', reason: 'tooEarlyDue' };
     }
 
-    // Their window hasn't opened yet by Aug 1 (under 18 weeks at opening) —
+    // Their window hasn\'t opened yet by Aug 1 (under 18 weeks at opening) —
     // capture their info via Klaviyo so we can follow up when the time is right.
-    // tws_window_opens_date = the date they'll be 20 weeks (anatomy scan ~= booking trigger).
+    // tws_window_opens_date = the date they\'ll be 20 weeks (anatomy scan ~= booking trigger).
     if (weeksAtOpen < 18) {
       const due         = new Date(dueDateStr + 'T12:00:00');
       const windowOpens = new Date(due.getTime() - 20 * MS_WEEK); // due − 20 weeks = 20wk mark
@@ -693,7 +750,7 @@ function qualifyDueDate(dueDateStr) {
         reason: 'under18AtOpen',
         klavWindowOpens: windowOpens.toISOString().slice(0, 10),
         // Note shown on due-date step (informational only — not a gate)
-        noteHtml: `Your ideal booking window opens around <strong>${formatDate(windowOpens)}</strong> — near your anatomy scan. We'll reach out at exactly the right time.`
+        noteHtml: `Your ideal booking window opens around <strong>${formatDate(windowOpens)}</strong> — near your anatomy scan. We\'ll reach out at exactly the right time.`
       };
     }
 
@@ -704,7 +761,7 @@ function qualifyDueDate(dueDateStr) {
     const sessionStart = new Date(due.getTime() - 32 * MS_WEEK); // ~32 weeks = latest start
     let noteHtml = '';
     if (sessionStart < firstAvail) {
-      noteHtml = `We're available starting <strong>${formatDate(firstAvail)}</strong> — the earliest we can schedule your session. Your window extends well into our available dates, so there's no urgency to worry about.`;
+      noteHtml = `We\'re available starting <strong>${formatDate(firstAvail)}</strong> — the earliest we can schedule your session. Your window extends well into our available dates, so there\'s no urgency to worry about.`;
     }
     return { valid: 'good', noteHtml };
   }
@@ -712,7 +769,7 @@ function qualifyDueDate(dueDateStr) {
   if (service === 'newborn') {
     const due      = new Date(dueDateStr + 'T12:00:00');
     // Newborn window: first 14 days after birth.
-    // We're scheduling only for babies born last week of July (July 25–31) or very early Aug.
+    // We\'re scheduling only for babies born last week of July (July 25–31) or very early Aug.
     // Must reach out at least 2 weeks before due date.
     const july25   = new Date(firstAvail.getFullYear(), 6, 25); // July 25
     const aug7     = new Date(firstAvail.getFullYear(), 7, 7);  // Aug 7 (early arrival buffer)
@@ -750,7 +807,7 @@ function render() {
       <div class="intro-block">
         <p class="intro-eyebrow">Free Session Match — Limited Spots Available</p>
         <h1 class="intro-headline">Find your <em>perfect session</em><br>in 2 minutes.</h1>
-        <p class="intro-body">Answer a few quick questions and we'll tell you exactly which session fits your timeline, what's available, and how to claim your spot — before it's gone.</p>
+        <p class="intro-body">Answer a few quick questions and we\'ll tell you exactly which session fits your timeline, what\'s available, and how to claim your spot — before it\'s gone.</p>
         <div class="intro-value-card">
           <span class="intro-value-label">What You Get</span>
           <div class="intro-value-title">Your Personalized Session Match + Availability Check</div>
@@ -959,14 +1016,14 @@ function renderQualified(content) {
   } else if (timing) {
     spotText = spotMap[timing] || '';
     bodyText = spotText
-      ? `We have <strong>${spotText}</strong>. Fill out the form below and we'll be in touch within one business day.`
+      ? `We have <strong>${spotText}</strong>. Fill out the form below and we\'ll be in touch within one business day.`
       : 'We\'d love to connect. Fill out the short form below and we\'ll be in touch.';
   }
 
   content.innerHTML = `
     <div class="qualified-screen">
-      <p class="result-eyebrow">You're in the right place</p>
-      <h2 class="qualified-headline">We'd love to work<br>with you.</h2>
+      <p class="result-eyebrow">You\'re in the right place</p>
+      <h2 class="qualified-headline">We\'d love to work<br>with you.</h2>
       <p class="qualified-sub">${bodyText}</p>
       ${spotText ? `<span class="spots-badge">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
@@ -999,45 +1056,20 @@ function renderExperience(content) {
   content.innerHTML = `
     <div class="question-wrap" style="padding-top:28px">
       <p class="intro-eyebrow">Your Stress-Free Experience</p>
-      <h2 class="question-headline" style="margin-bottom:20px">Here's exactly what's included.</h2>
+      <h2 class="question-headline" style="margin-bottom:20px">Here\'s exactly what\'s included.</h2>
 
       <div class="offer-panel">
         <div class="offer-panel-hed">Every detail is intentional.</div>
         <div class="offer-panel-sub">Starting at $1,290 — average client investment $3,000.</div>
 
-        <div class="offer-items">
-          <div class="offer-item"><div class="offer-icon">✦</div><div>
-            <div class="offer-item-title">Professional Hair &amp; Makeup</div>
-            <div class="offer-item-desc">Arrive camera-ready with complimentary professional hair and makeup artistry — confident, polished, and fully taken care of.</div>
-          </div></div>
-          <div class="offer-item"><div class="offer-icon">✦</div><div>
-            <div class="offer-item-title">In-Home Planning &amp; Design Consult</div>
-            <div class="offer-item-desc">We begin with an in-home consultation to understand your vision, curate styling, and plan how your portraits will live in your space.</div>
-          </div></div>
-          <div class="offer-item"><div class="offer-icon">✦</div><div>
-            <div class="offer-item-title">Perfection Without Time Constraints</div>
-            <div class="offer-item-desc">Your session unfolds naturally — no clock, no rushing. Change outfits, explore locations, and enjoy every moment.</div>
-          </div></div>
-          <div class="offer-item"><div class="offer-icon">✦</div><div>
-            <div class="offer-item-title">Private Reveal Appointment</div>
-            <div class="offer-item-desc">An intimate viewing experience where we unveil your gallery and guide you through selecting artwork designed to become lasting heirlooms.</div>
-          </div></div>
-          <div class="offer-item"><div class="offer-icon">✦</div><div>
-            <div class="offer-item-title">7–10 Business Day Delivery</div>
-            <div class="offer-item-desc">Your curated collection is professionally prepared and ready to be enjoyed in your home — faster than you'd expect.</div>
-          </div></div>
-          <div class="offer-item"><div class="offer-icon">✦</div><div>
-            <div class="offer-item-title">Wall Art Installation &amp; Warranty</div>
-            <div class="offer-item-desc">Every piece includes master retouching, professional installation, and a limited lifetime warranty.</div>
-          </div></div>
-        </div>
+        <div class="offer-items" id="offerItemsList"></div>
 
         <div class="offer-process">
           <div class="offer-process-lbl">Our White Glove Process</div>
           <div class="process-steps">
             <div class="process-step"><div class="process-num">1</div>
               <div class="process-text"><strong>Begin the Conversation</strong>
-                <em>A relaxed consultation to understand your vision and ensure we're the right fit.</em></div></div>
+                <em>A relaxed consultation to understand your vision and ensure we\'re the right fit.</em></div></div>
             <div class="process-step"><div class="process-num">2</div>
               <div class="process-text"><strong>Expertly Curated Experience</strong>
                 <em>Thoughtful planning, wardrobe guidance, and gentle direction so you feel confident and present.</em></div></div>
@@ -1054,10 +1086,13 @@ function renderExperience(content) {
 
       <div class="exp-btn-group">
         <button class="btn-next" style="font-size:13px;letter-spacing:0.14em;text-transform:uppercase;font-weight:600;padding:16px;border-radius:4px;cursor:pointer;border:none;background:var(--cta);color:var(--cta-text)"
-          onclick="experienceDecision('yes')">I'm Ready — Let's Do This</button>
+          onclick="experienceDecision('yes')">I\'m Ready — Let\'s Do This</button>
         <button class="btn-ghost" onclick="experienceDecision('no')">Not the Right Time</button>
       </div>
     </div>`;
+
+  // Populate dynamic offer items now that the DOM is ready
+  populateOfferItems();
 }
 
 function experienceDecision(val) {
@@ -1066,39 +1101,164 @@ function experienceDecision(val) {
   if (val === 'no') {
     currentStep = STEPS.length; render();
   } else {
-    // Find contact step and go there
     const contactIdx = STEPS.findIndex(s => s.id === 'contact');
     currentStep = contactIdx;
     render();
   }
 }
 
-// ── Maternity unmatch ─────────────────────────────────────────────
+// ── Populate dynamic offer items based on service ─────────────────
+function buildOfferItems() {
+  const svc = state.service;
+  const items = [];
+
+  // Universal items every service gets
+  items.push({ title: 'Professional Hair &amp; Makeup',         desc: 'Arrive camera-ready with complimentary professional hair and makeup artistry — confident, polished, and fully taken care of.' });
+  items.push({ title: 'In-Home Planning &amp; Design Consult',  desc: 'We begin with an in-home consultation to understand your vision, curate styling, and plan how your portraits will live in your space.' });
+  items.push({ title: 'Outdoor Locations Available',             desc: 'Every session can include stunning outdoor settings — golden hour fields, wooded trails, urban backdrops, or your favourite meaningful spot.' });
+  items.push({ title: 'Perfection Without Time Constraints',    desc: 'Your session unfolds naturally — no clock, no rushing. Change outfits, explore locations, and enjoy every moment.' });
+
+  // Service-specific additions
+  if (svc === 'maternity' || svc === 'boudoir') {
+    items.push({ title: 'Designer Maternity Gown Collection',   desc: 'Choose from our curated wardrobe of flowing designer gowns — fit for your bump, styled to the light, and ready for you to wear.' });
+  }
+  if (svc === 'newborn') {
+    items.push({ title: 'Newborn Props &amp; Wraps Provided',   desc: 'Baskets, wraps, floral setups, and hand-selected props — everything styled and ready so you just bring your baby.' });
+  }
+  if (svc === 'senior') {
+    items.push({ title: 'Family Portraits Included',            desc: 'Add a family session at the end of your senior shoot — one experience, two sets of memories.' });
+    items.push({ title: 'Cap &amp; Gown Session — Following Year', desc: 'We save your spot for a complimentary cap and gown add-on the year you graduate. No need to chase a separate photographer.' });
+  }
+
+  // Universal closing items
+  items.push({ title: 'Private Reveal Appointment',             desc: 'An intimate viewing experience where we unveil your gallery and guide you through selecting artwork designed to become lasting heirlooms.' });
+  items.push({ title: '7–10 Business Day Delivery',             desc: 'Your curated collection is professionally prepared and ready to be enjoyed in your home — faster than you\'d expect.' });
+  items.push({ title: 'Wall Art Installation &amp; Warranty',   desc: 'Every piece includes master retouching, professional installation, and a limited lifetime warranty.' });
+
+  return items.map(i => `
+    <div class="offer-item"><div class="offer-icon">✦</div><div>
+      <div class="offer-item-title">${i.title}</div>
+      <div class="offer-item-desc">${i.desc}</div>
+    </div></div>`).join('');
+}
+
+// Called after renderExperience injects the DOM
+function populateOfferItems() {
+  const el = document.getElementById('offerItemsList');
+  if (el) el.innerHTML = buildOfferItems();
+}
+
+// ── Loop helper — switch to a suggested service and restart from budget
+function loopToService(newService) {
+  state.service      = newService;
+  state.dueDate      = null;
+  state.dueDateValid = null;
+  state.dueDateReason = null;
+  state.timing       = null;
+  state.budget       = null;
+  state.cameFromExperience = false;
+  // Jump to budget step — they already know timing doesn\'t work for the
+  // original service, so we skip straight to pricing for the new one.
+  const budgetIdx = STEPS.findIndex(s => s.id === 'budget');
+  currentStep = budgetIdx;
+  render();
+}
+
+// ── Maternity unmatch — offer Newborn + Family ────────────────────
 function renderMaternityUnmatch(content) {
   document.getElementById('progressShell').style.display = 'none';
   document.getElementById('bottomNav').style.display     = 'none';
   content.innerHTML = `
     <div class="result-screen">
-      <span class="result-icon">🤍</span>
       <p class="result-eyebrow">Availability Notice</p>
       <h2 class="result-headline">We wish we could <em>make it work.</em></h2>
-      <p class="result-body">For the most beautiful results, maternity sessions are photographed between 20 and 32 weeks. Based on your due date, that window falls outside our current availability.</p>
-      <p class="result-body">We'd love to connect for a <strong>newborn, family, or future session</strong> when the timing is right.</p>
+      <p class="result-body">Maternity sessions are photographed between 20 and 32 weeks. Based on your due date, that window falls outside our current availability — but this doesn\'t have to be the end of the story.</p>
+
+      <div class="explore-section">
+        <span class="explore-label">Explore what\'s available for you</span>
+        <div class="explore-cards">
+
+          <button class="explore-card" onclick="loopToService('newborn')">
+            <span class="explore-card-label">When baby arrives</span>
+            <span class="explore-card-title">Newborn Session</span>
+            <span class="explore-card-desc">Capture the first days of life with a fully styled, guided newborn experience — props, wraps, and everything provided.</span>
+            <div class="perks-grid" style="margin:8px 0 0">
+              <span class="perk-chip highlight">Newborn Props &amp; Wraps</span>
+              <span class="perk-chip highlight">Outdoor Available</span>
+              <span class="perk-chip">Hair &amp; Makeup</span>
+              <span class="perk-chip">Guided Posing</span>
+            </div>
+            <span class="explore-card-arrow">→</span>
+          </button>
+
+          <button class="explore-card" onclick="loopToService('family')">
+            <span class="explore-card-label">Anytime that works for you</span>
+            <span class="explore-card-title">Family Session</span>
+            <span class="explore-card-desc">Your growing family — studio, outdoors, or both. A fully guided experience that captures everyone at their best.</span>
+            <div class="perks-grid" style="margin:8px 0 0">
+              <span class="perk-chip highlight">Outdoor Locations</span>
+              <span class="perk-chip">Hair &amp; Makeup</span>
+              <span class="perk-chip">Wardrobe Guidance</span>
+              <span class="perk-chip">All Ages Welcome</span>
+            </div>
+            <span class="explore-card-arrow">→</span>
+          </button>
+
+        </div>
+        <button class="btn-future-session" onclick="loopToService('maternity')">
+          Interested in a Future Maternity Session →
+        </button>
+      </div>
     </div>`;
 }
 
-// ── Newborn unmatch ───────────────────────────────────────────────
+// ── Newborn unmatch — offer Maternity + Family ────────────────────
 function renderNewbornUnmatch(content) {
   document.getElementById('progressShell').style.display = 'none';
   document.getElementById('bottomNav').style.display     = 'none';
   content.innerHTML = `
     <div class="result-screen">
-      <span class="result-icon">🤍</span>
       <p class="result-eyebrow">Availability Notice</p>
-      <h2 class="result-headline">The timing isn't quite right — <em>but let's talk.</em></h2>
-      <p class="result-body">Newborn sessions are best within the first 14 days of life, and we're currently only scheduling for babies arriving the last week of July. We want to make sure your little one gets the session they deserve.</p>
-      <p class="result-body">Reach out directly and we'll see if we can make something work, or get you first in line when the right window opens.</p>
-      <div class="contact-links">
+      <h2 class="result-headline">The timing isn\'t quite there — <em>but we\'d love to work with you.</em></h2>
+      <p class="result-body">We\'re currently only scheduling newborns arriving the last week of July. Here\'s what we can do for you right now.</p>
+
+      <div class="explore-section">
+        <span class="explore-label">Explore what\'s available for you</span>
+        <div class="explore-cards">
+
+          <button class="explore-card" onclick="loopToService('maternity')">
+            <span class="explore-card-label">Before baby arrives</span>
+            <span class="explore-card-title">Maternity Session</span>
+            <span class="explore-card-desc">If you\'re still in your window, a maternity session captures this season beautifully — designer gowns, guided, fully styled.</span>
+            <div class="perks-grid" style="margin:8px 0 0">
+              <span class="perk-chip highlight">Designer Maternity Gowns</span>
+              <span class="perk-chip highlight">Outdoor Available</span>
+              <span class="perk-chip">Hair &amp; Makeup</span>
+              <span class="perk-chip">Guided Posing</span>
+            </div>
+            <span class="explore-card-arrow">→</span>
+          </button>
+
+          <button class="explore-card" onclick="loopToService('family')">
+            <span class="explore-card-label">Once baby is home</span>
+            <span class="explore-card-title">Family Session</span>
+            <span class="explore-card-desc">A family session with your newborn captures those early weeks just as beautifully — on your timeline, not ours.</span>
+            <div class="perks-grid" style="margin:8px 0 0">
+              <span class="perk-chip highlight">Outdoor Locations</span>
+              <span class="perk-chip">Newborn Welcome</span>
+              <span class="perk-chip">Hair &amp; Makeup</span>
+              <span class="perk-chip">Wardrobe Guidance</span>
+            </div>
+            <span class="explore-card-arrow">→</span>
+          </button>
+
+        </div>
+        <button class="btn-future-session" onclick="loopToService('newborn')">
+          Interested in a Future Newborn Session →
+        </button>
+      </div>
+
+      <div class="contact-links" style="margin-top:20px">
         <a href="${SMS_HREF}" class="contact-link contact-link-primary">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           Text Us &nbsp;${PHONE_DISPLAY}
@@ -1121,7 +1281,7 @@ function renderBudgetUnmatch(content) {
       <div class="redirect-notice">
         <span class="redirect-notice-icon">🤍</span>
         <h2 class="redirect-notice-title">We appreciate your honesty.</h2>
-        <p class="redirect-notice-body">Our sessions start at $1,290 — and we want to be upfront so you can plan with confidence. When you're ready to make this investment in yourself or your family, <strong>we'd love to be your photographer.</strong></p>
+        <p class="redirect-notice-body">Our sessions start at $1,290 — and we want to be upfront so you can plan with confidence. When you\'re ready to make this investment in yourself or your family, <strong>we\'d love to be your photographer.</strong></p>
         <p class="redirect-notice-body" style="margin-top:10px">In the meantime, explore our work and follow along on Instagram to see what we create together.</p>
       </div>
       <div class="redirect-countdown">
@@ -1161,11 +1321,11 @@ function renderKlavCapture(content) {
   content.innerHTML = `
     <div class="klav-screen">
       <p class="result-eyebrow">Your spot is reserved</p>
-      <h2 class="klav-headline">We'll reach out when <em>your window opens.</em></h2>
-      <p class="klav-body">Your ideal session timing opens around <strong>${winFmt}</strong> — near your anatomy scan. We've noted your details and will be in touch at exactly the right time with everything you need to plan your session.</p>
+      <h2 class="klav-headline">We\'ll reach out when <em>your window opens.</em></h2>
+      <p class="klav-body">Your ideal session timing opens around <strong>${winFmt}</strong> — near your anatomy scan. We\'ve noted your details and will be in touch at exactly the right time with everything you need to plan your session.</p>
       <div id="klav-status" style="font-size:13px;color:var(--text2);margin-bottom:20px">Saving your spot…</div>
       <div class="inquire-bar">
-        <span class="inquire-or">Can't wait? Reach us directly</span>
+        <span class="inquire-or">Can\'t wait? Reach us directly</span>
         <div class="inquire-links">
           <a href="sms:+12482746361" class="contact-link contact-link-primary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
