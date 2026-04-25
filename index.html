@@ -1115,7 +1115,9 @@ function buildOfferItems() {
   // Universal items every service gets
   items.push({ title: 'Professional Hair &amp; Makeup',         desc: 'Arrive camera-ready with complimentary professional hair and makeup artistry — confident, polished, and fully taken care of.' });
   items.push({ title: 'In-Home Planning &amp; Design Consult',  desc: 'We begin with an in-home consultation to understand your vision, curate styling, and plan how your portraits will live in your space.' });
-  items.push({ title: 'Outdoor Locations Available',             desc: 'Every session can include stunning outdoor settings — golden hour fields, wooded trails, urban backdrops, or your favourite meaningful spot.' });
+  if (svc !== 'newborn') {
+    items.push({ title: 'Outdoor Locations Available', desc: 'Every session can include stunning outdoor settings — golden hour fields, wooded trails, urban backdrops, or your favourite meaningful spot.' });
+  }
   items.push({ title: 'Perfection Without Time Constraints',    desc: 'Your session unfolds naturally — no clock, no rushing. Change outfits, explore locations, and enjoy every moment.' });
 
   // Service-specific additions
@@ -1181,10 +1183,10 @@ function renderMaternityUnmatch(content) {
           <button class="explore-card" onclick="loopToService('newborn')">
             <span class="explore-card-label">When baby arrives</span>
             <span class="explore-card-title">Newborn Session</span>
-            <span class="explore-card-desc">Capture the first days of life with a fully styled, guided newborn experience — props, wraps, and everything provided.</span>
+            <span class="explore-card-desc">Capture the first days of life with a fully styled, guided studio experience — props, wraps, and everything provided.</span>
             <div class="perks-grid" style="margin:8px 0 0">
               <span class="perk-chip highlight">Newborn Props &amp; Wraps</span>
-              <span class="perk-chip highlight">Outdoor Available</span>
+              <span class="perk-chip highlight">Studio Session</span>
               <span class="perk-chip">Hair &amp; Makeup</span>
               <span class="perk-chip">Guided Posing</span>
             </div>
