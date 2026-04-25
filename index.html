@@ -127,7 +127,7 @@ main {
 
 /* ── Step intro ──────────────────────────────────────────────────────── */
 .intro-block {
-  padding: 36px 0 8px;
+  padding: 32px 0 8px;
   animation: fadeUp 0.5s ease both;
 }
 .intro-eyebrow {
@@ -136,14 +136,35 @@ main {
 }
 .intro-headline {
   font-family: 'Cormorant Garamond', serif;
-  font-size: clamp(30px, 8vw, 50px);
-  font-weight: 300; line-height: 1.08;
-  color: var(--text); margin-bottom: 14px;
+  font-size: clamp(28px, 7.5vw, 46px);
+  font-weight: 300; line-height: 1.1;
+  color: var(--text); margin-bottom: 12px;
 }
 .intro-headline em { font-style: italic; color: var(--gold); }
 .intro-body {
-  font-size: 13px; line-height: 1.65;
-  color: var(--text2); margin-bottom: 28px;
+  font-size: 13.5px; line-height: 1.65;
+  color: var(--text2); margin-bottom: 20px;
+}
+/* The deliverable card — makes the free value tangible before the CTA */
+.intro-value-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  border-radius: 4px;
+  padding: 16px 18px;
+  margin-bottom: 24px;
+}
+.intro-value-label {
+  font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 6px; display: block;
+}
+.intro-value-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px; font-weight: 400; color: var(--text);
+  line-height: 1.3; margin-bottom: 4px;
+}
+.intro-value-desc {
+  font-size: 12.5px; color: var(--text2); line-height: 1.55;
 }
 .intro-cta {
   width: 100%; background: var(--cta); color: var(--cta-text);
@@ -727,14 +748,19 @@ function render() {
     shell.style.display = 'none'; nav.style.display = 'none';
     content.innerHTML = `
       <div class="intro-block">
-        <p class="intro-eyebrow">Session Availability</p>
-        <h1 class="intro-headline">Let's make sure<br><em>we're the right fit.</em></h1>
-        <p class="intro-body">A few quick questions so we can be completely honest with you about availability, timing, and whether this experience is what you're looking for — before we take up each other's time.</p>
+        <p class="intro-eyebrow">Free Session Match — Limited Spots Available</p>
+        <h1 class="intro-headline">Find your <em>perfect session</em><br>in 2 minutes.</h1>
+        <p class="intro-body">Answer a few quick questions and we'll tell you exactly which session fits your timeline, what's available, and how to claim your spot — before it's gone.</p>
+        <div class="intro-value-card">
+          <span class="intro-value-label">What You Get</span>
+          <div class="intro-value-title">Your Personalized Session Match + Availability Check</div>
+          <div class="intro-value-desc">Instant results — your ideal timing, the right session type, and your next step. No guessing, no back-and-forth.</div>
+        </div>
         <button class="intro-cta" onclick="goNext()">
-          Get Started
+          Find My Session
           <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <p class="intro-trust">Takes under two minutes &nbsp;·&nbsp; No obligation</p>
+        <p class="intro-trust">Takes 2 minutes &nbsp;·&nbsp; No obligation</p>
       </div>`;
     return;
   }
