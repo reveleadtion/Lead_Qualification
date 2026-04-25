@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="theme-color" content="#FFFFFF">
+<title>Let's See If We're a Fit | Two Wild Souls Photography</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=optional"
+  media="print" onload="this.media='all'">
+<noscript>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=optional">
+</noscript>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Design tokens: black, white, gold — timeless & upscale ─────────── */
+:root {
+  --bg:       #FFFFFF;
+  --surface:  #F8F7F5;
+  --surface2: #EFECE7;
+  --text:     #1A1A18;
+  --text2:    #6B6860;
+  --gold:     #A8925A;
+  --gold-dim: rgba(168,146,90,0.10);
+  --gold-bdr: rgba(168,146,90,0.28);
+  --white:    #FFFFFF;
+  --cta:      #1A1A18;
+  --cta-text: #FFFFFF;
+  --error:    #b94f3a;
+  --faint:    rgba(26,26,24,0.07);
+  --border:   rgba(26,26,24,0.12);
+}
+
+/* ── popup-mode: transparent bg so Showit shows through ─────────────── */
+body.popup-mode, body.popup-mode html { background: transparent !important; }
+body.popup-mode .page-shell { border-radius: 8px; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,0.22); }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-weight: 300;
+  min-height: 100dvh;
+  height: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--bg);
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--faint);
+  background: var(--bg);
+  position: sticky; top: 0; z-index: 100;
+}
+.logo-wrap { display: flex; flex-direction: column; gap: 2px; }
+.logo-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px; font-weight: 400;
+  letter-spacing: 0.05em; color: var(--text);
+}
+.logo-name em { font-style: italic; color: var(--gold); }
+.logo-sub {
+  font-size: 9.5px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--text2);
+}
+.header-badge {
+  font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--gold);
+  background: var(--gold-dim);
+  border: 1px solid var(--gold-bdr);
+  padding: 5px 12px; border-radius: 100px; white-space: nowrap;
+}
+
+/* ── Progress bar ────────────────────────────────────────────────────── */
+.progress-shell {
+  background: var(--surface);
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--faint);
+}
+.progress-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.progress-step-label { font-size: 10.5px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text2); }
+.progress-pct        { font-size: 10.5px; color: var(--gold); }
+.progress-track { height: 2px; background: var(--faint); border-radius: 2px; overflow: hidden; }
+.progress-fill  {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), #E8D9A8);
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+.dots { display: flex; justify-content: center; gap: 8px; padding: 10px 0 0; }
+.dot  { width: 5px; height: 5px; border-radius: 50%; background: var(--faint); transition: all 0.3s; }
+.dot.active { background: var(--gold); transform: scale(1.5); }
+.dot.done   { background: rgba(199,178,122,0.45); transform: scale(1.1); }
+
+/* ── Main / layout ───────────────────────────────────────────────────── */
+main {
+  padding: 0 20px 120px;
+  max-width: 540px;
+  margin: 0 auto;
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Step intro ──────────────────────────────────────────────────────── */
+.intro-block {
+  padding: 36px 0 8px;
+  animation: fadeUp 0.5s ease both;
+}
+.intro-eyebrow {
+  font-size: 9.5px; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 10px;
+}
+.intro-headline {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(30px, 8vw, 50px);
+  font-weight: 300; line-height: 1.08;
+  color: var(--text); margin-bottom: 14px;
+}
+.intro-headline em { font-style: italic; color: var(--gold); }
+.intro-body {
+  font-size: 13px; line-height: 1.65;
+  color: var(--text2); margin-bottom: 28px;
+}
+.intro-cta {
+  width: 100%; background: var(--cta); color: var(--cta-text);
+  border: none;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-weight: 600; font-size: 13px;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 18px; cursor: pointer;
+  transition: opacity 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  border-radius: 4px;
+}
+.intro-cta:hover { opacity: 0.88; }
+.intro-trust { text-align: center; font-size: 11.5px; color: var(--text2); margin-top: 14px; letter-spacing: 0.03em; }
+
+/* ── Question wrap ───────────────────────────────────────────────────── */
+.question-wrap { padding: 36px 0 0; animation: fadeUp 0.4s ease both; }
+.question-headline {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(26px, 6.5vw, 36px);
+  font-weight: 300; line-height: 1.2;
+  color: var(--text); margin-bottom: 6px;
+}
+.question-hint {
+  font-size: 12.5px; color: var(--text2);
+  line-height: 1.65; margin-bottom: 26px; font-style: italic;
+}
+
+/* ── Options ─────────────────────────────────────────────────────────── */
+.options-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+.opt-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14.5px; font-weight: 300;
+  padding: 16px 20px; text-align: left; cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex; align-items: center; gap: 14px;
+  border-radius: 4px;
+  -webkit-tap-highlight-color: transparent;
+  width: 100%;
+}
+.opt-btn:hover { border-color: var(--gold-bdr); background: var(--surface2); }
+.opt-btn.selected {
+  background: var(--surface2);
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px rgba(199,178,122,0.2);
+}
+.opt-check {
+  width: 19px; height: 19px;
+  border: 1px solid var(--border);
+  border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.opt-btn.selected .opt-check { background: var(--gold); border-color: var(--gold); }
+.opt-btn.selected .opt-check::after { content: ''; width: 6px; height: 6px; background: #FFFFFF; border-radius: 50%; }
+.opt-text  { flex: 1; }
+.opt-label { display: block; line-height: 1.3; }
+.opt-sub   { display: block; font-size: 11.5px; color: var(--text2); margin-top: 3px; }
+
+/* ── Text / Email / Tel inputs ───────────────────────────────────────── */
+.text-field-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+.text-field {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 15px; font-weight: 300;
+  padding: 16px 20px;
+  outline: none;
+  transition: border-color 0.2s;
+  border-radius: 4px;
+  -webkit-tap-highlight-color: transparent;
+  appearance: none; -webkit-appearance: none;
+}
+.text-field::placeholder { color: var(--text2); }
+.text-field:focus { border-color: var(--gold); }
+
+/* ── Date input ──────────────────────────────────────────────────────── */
+.date-field-wrap { position: relative; margin-bottom: 8px; }
+.date-field-wrap:focus-within .date-field { border-color: var(--gold); }
+.date-field {
+  width: 100%; background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 16px; font-weight: 300;
+  padding: 16px 20px;
+  appearance: none; -webkit-appearance: none;
+  outline: none; transition: border-color 0.25s; border-radius: 4px; cursor: pointer;
+}
+.date-field::-webkit-calendar-picker-indicator { filter: opacity(0.45); padding: 4px; cursor: pointer; }
+.date-field::-webkit-datetime-edit { color: var(--text); }
+.date-field::-webkit-datetime-edit-fields-wrapper { color: var(--text); }
+
+/* ── Bottom nav ──────────────────────────────────────────────────────── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg);
+  border-top: 1px solid var(--faint);
+  padding: 14px 20px max(14px, env(safe-area-inset-bottom));
+  display: flex; gap: 10px; z-index: 200;
+  box-shadow: 0 -4px 20px rgba(26,26,24,0.07);
+}
+.btn-back {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 12.5px; letter-spacing: 0.08em;
+  padding: 0 20px; cursor: pointer; min-height: 52px;
+  transition: all 0.2s;
+  flex-shrink: 0; border-radius: 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-back:hover { border-color: var(--text2); color: var(--text); }
+.btn-next {
+  flex: 1; background: var(--cta); color: var(--cta-text);
+  border: none;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-weight: 600; font-size: 13px;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  min-height: 52px; cursor: pointer;
+  transition: opacity 0.2s; border-radius: 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-next:hover { opacity: 0.88; }
+.btn-next:disabled { background: var(--surface2); color: var(--text2); cursor: not-allowed; opacity: 1; }
+
+/* ── Validation msg ──────────────────────────────────────────────────── */
+.val-msg { font-size: 12px; color: var(--error); padding: 4px 0 8px; display: none; }
+
+/* ── Section divider ─────────────────────────────────────────────────── */
+.section-rule {
+  border: none; border-top: 1px solid var(--faint);
+  margin: 20px 0;
+}
+
+/* ── Offer panel (experience step) ──────────────────────────────────── */
+.offer-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 22px 18px;
+  margin-bottom: 20px;
+}
+.offer-panel-hed {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 21px; font-weight: 300; color: var(--text);
+  margin-bottom: 3px;
+}
+.offer-panel-sub {
+  font-size: 12px; font-style: italic; color: var(--text2);
+  margin-bottom: 18px; line-height: 1.5;
+}
+.offer-items { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+.offer-item  { display: flex; gap: 12px; align-items: flex-start; }
+.offer-icon  { color: var(--gold); font-size: 11px; margin-top: 3px; flex-shrink: 0; width: 14px; text-align: center; }
+.offer-item-title {
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text); margin-bottom: 2px; font-weight: 500;
+}
+.offer-item-desc { font-size: 12.5px; color: var(--text2); line-height: 1.55; }
+.offer-process { border-top: 1px solid var(--faint); padding-top: 16px; }
+.offer-process-lbl {
+  font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text2); margin-bottom: 12px;
+}
+.process-steps { display: flex; flex-direction: column; gap: 12px; }
+.process-step  { display: flex; gap: 12px; align-items: flex-start; }
+.process-num {
+  width: 20px; height: 20px;
+  border: 1px solid var(--gold-bdr); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 12px; color: var(--gold); flex-shrink: 0;
+}
+.process-text { font-size: 12.5px; color: var(--text); line-height: 1.5; padding-top: 1px; }
+.process-text em { font-style: italic; color: var(--text2); display: block; font-size: 12px; }
+.offer-investment {
+  background: var(--surface2); border-radius: 3px;
+  padding: 12px 14px; margin-top: 16px;
+  font-size: 12.5px; color: var(--text2); line-height: 1.6;
+}
+.offer-investment strong { color: var(--gold); font-weight: 400; }
+.exp-btn-group { display: flex; flex-direction: column; gap: 10px; }
+.exp-btn-group .btn-next { position: static; min-height: 52px; border-radius: 4px; }
+.btn-ghost {
+  width: 100%; background: transparent; border: 1px solid var(--border);
+  color: var(--text2);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 14px; cursor: pointer; transition: all 0.2s; border-radius: 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-ghost:hover { border-color: var(--text2); color: var(--text); }
+
+/* ── Result screens ──────────────────────────────────────────────────── */
+.result-screen {
+  padding: 48px 0 20px;
+  animation: fadeUp 0.5s ease both;
+  display: flex; flex-direction: column; align-items: flex-start;
+}
+.result-icon   { font-size: 28px; margin-bottom: 16px; }
+.result-eyebrow {
+  font-size: 9.5px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 10px;
+}
+.result-headline {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(26px, 7vw, 38px);
+  font-weight: 300; line-height: 1.15;
+  color: var(--text); margin-bottom: 16px;
+}
+.result-headline em { font-style: italic; color: var(--gold); }
+.result-body {
+  font-size: 14px; line-height: 1.75;
+  color: var(--text2); margin-bottom: 14px; max-width: 460px;
+}
+.result-body strong { color: var(--text); font-weight: 400; }
+
+/* ── Inquire Now bar (qualified + early maternity screens) ───────────── */
+.inquire-bar {
+  width: 100%; margin: 18px 0 4px;
+}
+.inquire-or {
+  display: block;
+  font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text2); margin-bottom: 10px;
+}
+.inquire-links {
+  display: flex; flex-direction: column; gap: 8px;
+  max-width: 360px;
+}
+
+/* ── Contact links (newborn unmatch) ─────────────────────────────────── */
+.contact-links { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 8px; max-width: 360px; }
+.contact-link {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 15px 20px; border-radius: 4px;
+  font-size: 12.5px; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  text-decoration: none; transition: opacity 0.2s;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+.contact-link:hover { opacity: 0.82; }
+.contact-link-primary { background: var(--cta); color: var(--cta-text); }
+.contact-link-outline { background: transparent; border: 1px solid var(--border); color: var(--text2); }
+.contact-link-outline:hover { border-color: var(--gold-bdr); color: var(--text); }
+
+/* ── Budget redirect / countdown ─────────────────────────────────────── */
+.redirect-screen {
+  padding: 48px 0 20px;
+  animation: fadeUp 0.5s ease both;
+  display: flex; flex-direction: column; align-items: flex-start;
+}
+.redirect-notice {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--gold);
+  border-radius: 6px;
+  padding: 24px 22px;
+  max-width: 480px;
+  margin-bottom: 24px;
+  width: 100%;
+}
+.redirect-notice-icon { font-size: 24px; display: block; margin-bottom: 12px; }
+.redirect-notice-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 24px; font-weight: 300; color: var(--text);
+  margin-bottom: 12px; line-height: 1.2;
+}
+.redirect-notice-body { font-size: 13.5px; line-height: 1.75; color: var(--text2); }
+.redirect-notice-body strong { color: var(--text); font-weight: 400; }
+.redirect-countdown {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--text2); letter-spacing: 0.04em;
+}
+.redirect-countdown svg { color: var(--gold); flex-shrink: 0; }
+.redirect-countdown-num { color: var(--gold); font-weight: 500; min-width: 12px; display: inline-block; }
+
+/* ── Qualified result + Sprout form ─────────────────────────────────── */
+.qualified-screen {
+  padding: 36px 0 20px;
+  animation: fadeUp 0.5s ease both;
+}
+.qualified-headline {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(26px, 7vw, 38px);
+  font-weight: 300; line-height: 1.15;
+  color: var(--text); margin-bottom: 6px;
+}
+.qualified-sub { font-size: 13px; color: var(--text2); line-height: 1.65; margin-bottom: 4px; }
+.spots-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 9.5px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--gold); background: var(--gold-dim);
+  border: 1px solid var(--gold-bdr);
+  padding: 5px 12px; border-radius: 100px;
+  margin: 14px 0 20px;
+}
+.sprout-wrapper { width: 100%; margin-top: 8px; }
+.sprout-wrapper iframe { width: 100% !important; border: none; }
+
+/* ── Klaviyo early-maternity capture ─────────────────────────────────── */
+.klav-screen {
+  padding: 48px 0 20px;
+  animation: fadeUp 0.5s ease both;
+}
+.klav-headline {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(26px, 7vw, 36px);
+  font-weight: 300; line-height: 1.15;
+  color: var(--text); margin-bottom: 10px;
+}
+.klav-body { font-size: 13.5px; color: var(--text2); line-height: 1.7; margin-bottom: 22px; }
+#klav-status {
+  font-size: 12.5px; color: var(--gold);
+  margin-top: 10px; min-height: 18px; letter-spacing: 0.02em;
+}
+#klav-status.error { color: var(--error); }
+
+/* ── Responsive tweaks ───────────────────────────────────────────────── */
+@media (min-width: 600px) {
+  header, .progress-shell { padding-left: 32px; padding-right: 32px; }
+  main { padding: 0 32px 120px; }
+  .bottom-nav { padding: 18px 32px max(18px, env(safe-area-inset-bottom)); }
+}
+@media (min-width: 900px) {
+  main { max-width: 560px; margin: 0 auto; padding: 0 0 140px; }
+  .bottom-nav {
+    left: 50%; right: auto; transform: translateX(-50%);
+    width: 560px;
+    border-left: 1px solid var(--faint);
+    border-right: 1px solid var(--faint);
+    border-radius: 0 0 6px 6px;
+  }
+}
+</style>
+</head>
+<body>
+<div class="page-shell">
+
+<header>
+  <div class="logo-wrap">
+    <span class="logo-name">Two Wild <em>Souls</em> Photography</span>
+    <span class="logo-sub">Session Availability</span>
+  </div>
+  <span class="header-badge">Limited Spots</span>
+</header>
+
+<div class="progress-shell" id="progressShell" style="display:none">
+  <div class="progress-row">
+    <span class="progress-step-label" id="stepLabel">Step 1 of 4</span>
+    <span class="progress-pct"        id="stepPct">20%</span>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill" id="progressFill" style="width:0%"></div>
+  </div>
+  <div class="dots" id="dots"></div>
+</div>
+
+<main id="mainContent"></main>
+
+<div class="bottom-nav" id="bottomNav" style="display:none">
+  <button class="btn-back" id="btnBack"  onclick="goBack()">&#8592; Back</button>
+  <button class="btn-next" id="btnNext"  onclick="goNext()">Continue &#8594;</button>
+</div>
+
+</div><!-- /.page-shell -->
+
+<script>
+// =====================================================================
+//  CONFIG
+// =====================================================================
+const PHONE_RAW     = '2482746361';
+const PHONE_DISPLAY = '(248) 274-6361';
+const SMS_HREF      = 'sms:+1' + PHONE_RAW;
+const EMAIL_HREF    = 'mailto:jasmine@twowildsoulsphotography.com';
+const MAIN_SITE     = 'https://twowildsoulsphotography.com';
+
+const BUDGET_REDIRECT_DELAY = 8; // seconds before redirecting budget unmatch
+
+// Klaviyo
+const KLAV_PUBLIC  = 'WgMSBs';
+const KLAV_LIST    = 'V3bUGq';
+
+// Spot counts (update manually when calendar fills)
+const SPOTS = { aug: 3, sep: 5, oct: 5 };
+
+// =====================================================================
+//  STATE
+// =====================================================================
+const state = {
+  service: null,
+  dueDate: null,
+  dueDateValid: null,    // 'good' | 'tooEarly' | 'unqualified'
+  dueDateReason: null,
+  klavWindowOpens: null,
+  timing: null,
+  budget: null,
+  name: null,
+  email: null,
+  phone: null,
+  cameFromExperience: false,
+};
+
+// =====================================================================
+//  STEP DEFINITIONS
+// =====================================================================
+// Steps are objects; activeSteps() filters by current state.
+const STEPS = [
+  { id: 'service',  type: 'options',  label: 'What brings you here?',
+    hint: 'Select the session type you have in mind.',
+    options: [
+      { value: 'maternity', label: 'Maternity',                 sub: null },
+      { value: 'boudoir',   label: 'Boudoir Maternity',         sub: null },
+      { value: 'newborn',   label: 'Newborn',                   sub: null },
+      { value: 'senior',    label: 'Senior Portraits',          sub: null },
+      { value: 'family',    label: 'Family',                    sub: null },
+      { value: 'branding',  label: 'Branding / Headshots',      sub: null },
+      { value: 'beauty',    label: 'Beauty / Other',            sub: null },
+    ]
+  },
+  { id: 'duedate', type: 'duedate', label: 'When is your baby due?',
+    hint: null,
+    // shown only for maternity / boudoir / newborn
+    showIf: () => ['maternity','boudoir','newborn'].includes(state.service)
+  },
+  { id: 'timing',  type: 'options', label: 'When are you hoping to have your session?',
+    hint: 'Our next availability opens August 1st.',
+    // shown only for non-pregnancy services
+    showIf: () => !['maternity','boudoir','newborn'].includes(state.service),
+    options: [
+      { value: 'aug',   label: 'August',          sub: SPOTS.aug + ' spots remaining' },
+      { value: 'sep',   label: 'September',       sub: SPOTS.sep + ' spots remaining' },
+      { value: 'oct',   label: 'October',         sub: SPOTS.oct + ' spots remaining' },
+      { value: 'later', label: 'Later / Flexible', sub: null },
+    ]
+  },
+  { id: 'budget',  type: 'options', label: 'A quick note on investment.',
+    hint: 'Sessions start at $1,290 — fully all-inclusive. Hair, makeup, wardrobe, and every detail taken care of for you. Average client investment is $3,000.',
+    options: [
+      { value: 'yes',   label: 'Yes, that works for me', sub: null },
+      { value: 'learn', label: "I'd like to know more first", sub: null },
+      { value: 'no',    label: "That's outside my budget right now", sub: null },
+    ]
+  },
+  { id: 'contact', type: 'contact', label: "Almost there.",
+    hint: "We'll follow up within one business day.",
+    // Show contact for all qualified paths — tooEarly goes here too (routes to Klaviyo after)
+    // Skip only when budget declined, experience panel chosen, or timing truly unqualified
+    showIf: () => state.budget !== 'no' && state.budget !== 'learn'
+                  && state.dueDateValid !== 'unqualified'
+  },
+];
+
+function activeSteps() {
+  return STEPS
+    .map((s, i) => ({ s, i }))
+    .filter(({ s }) => !s.showIf || s.showIf())
+    .map(({ i }) => i);
+}
+
+let currentStep = -1; // -1 = intro
+
+// =====================================================================
+//  HELPERS
+// =====================================================================
+const MS_WEEK = 7 * 24 * 3600 * 1000;
+
+function weeksAlongOnDate(dueDateStr, onDate) {
+  const due = new Date(dueDateStr + 'T12:00:00');
+  return 40 - (due - onDate) / MS_WEEK;
+}
+
+function formatDate(d) {
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+// =====================================================================
+//  DUE DATE QUALIFICATION
+// =====================================================================
+
+// Returns the first Aug 1 that is >= today.
+// If today is already Aug 1 or later in the current year, returns next year's Aug 1.
+function firstAvailableDate() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const thisYearAug1 = new Date(today.getFullYear(), 7, 1); // month 7 = August (0-indexed)
+  return thisYearAug1 >= today ? thisYearAug1 : new Date(today.getFullYear() + 1, 7, 1);
+}
+
+function qualifyDueDate(dueDateStr) {
+  const today    = new Date(); today.setHours(0,0,0,0);
+  const firstAvail = firstAvailableDate(); // earliest we can shoot — Aug 1 of current/next yr
+
+  const service = state.service;
+
+  if (service === 'maternity' || service === 'boudoir') {
+    const weeksNow      = weeksAlongOnDate(dueDateStr, today);
+    const weeksAtOpen   = weeksAlongOnDate(dueDateStr, firstAvail);
+
+    // Already at or past 32 weeks today — too late
+    if (weeksNow >= 32) {
+      return { valid: 'unqualified', reason: 'past32' };
+    }
+
+    // Will be past 32 weeks by the time we open — can't fit them in
+    if (weeksAtOpen > 32) {
+      return { valid: 'unqualified', reason: 'tooEarlyDue' };
+    }
+
+    // Their window hasn't opened yet by Aug 1 (under 18 weeks at opening) —
+    // capture their info via Klaviyo so we can follow up when the time is right.
+    // tws_window_opens_date = the date they'll be 20 weeks (anatomy scan ~= booking trigger).
+    if (weeksAtOpen < 18) {
+      const due         = new Date(dueDateStr + 'T12:00:00');
+      const windowOpens = new Date(due.getTime() - 20 * MS_WEEK); // due − 20 weeks = 20wk mark
+      return {
+        valid: 'tooEarly',
+        reason: 'under18AtOpen',
+        klavWindowOpens: windowOpens.toISOString().slice(0, 10),
+        // Note shown on due-date step (informational only — not a gate)
+        noteHtml: `Your ideal booking window opens around <strong>${formatDate(windowOpens)}</strong> — near your anatomy scan. We'll reach out at exactly the right time.`
+      };
+    }
+
+    // 18–32 weeks at opening — valid session window.
+    // If their ideal window starts before Aug 1, note that Aug 1 is our earliest availability.
+    // The 'good' path always routes through budget → contact → Sprout.
+    const due        = new Date(dueDateStr + 'T12:00:00');
+    const sessionStart = new Date(due.getTime() - 32 * MS_WEEK); // ~32 weeks = latest start
+    let noteHtml = '';
+    if (sessionStart < firstAvail) {
+      noteHtml = `We're available starting <strong>${formatDate(firstAvail)}</strong> — the earliest we can schedule your session. Your window extends well into our available dates, so there's no urgency to worry about.`;
+    }
+    return { valid: 'good', noteHtml };
+  }
+
+  if (service === 'newborn') {
+    const due      = new Date(dueDateStr + 'T12:00:00');
+    // Newborn window: first 14 days after birth.
+    // We're scheduling only for babies born last week of July (July 25–31) or very early Aug.
+    // Must reach out at least 2 weeks before due date.
+    const july25   = new Date(firstAvail.getFullYear(), 6, 25); // July 25
+    const aug7     = new Date(firstAvail.getFullYear(), 7, 7);  // Aug 7 (early arrival buffer)
+    const outreachDeadline = new Date(july25.getTime() - 14 * 24 * 3600 * 1000); // 2wks before July 25
+
+    if (due >= july25 && due <= aug7) {
+      return today <= outreachDeadline
+        ? { valid: 'good' }
+        : { valid: 'unqualified', reason: 'tooLateOutreach' };
+    }
+    return { valid: 'unqualified', reason: due < july25 ? 'beforeJuly' : 'afterAug' };
+  }
+
+  return { valid: 'good' };
+}
+
+// =====================================================================
+//  RENDER
+// =====================================================================
+function render() {
+  const content  = document.getElementById('mainContent');
+  const shell    = document.getElementById('progressShell');
+  const nav      = document.getElementById('bottomNav');
+  const fill     = document.getElementById('progressFill');
+  const stepLbl  = document.getElementById('stepLabel');
+  const pctLbl   = document.getElementById('stepPct');
+  const dotsEl   = document.getElementById('dots');
+  const btnBack  = document.getElementById('btnBack');
+  const btnNext  = document.getElementById('btnNext');
+
+  // ── INTRO ──────────────────────────────────────────────────────────
+  if (currentStep === -1) {
+    shell.style.display = 'none'; nav.style.display = 'none';
+    content.innerHTML = `
+      <div class="intro-block">
+        <p class="intro-eyebrow">Session Availability</p>
+        <h1 class="intro-headline">Let's make sure<br><em>we're the right fit.</em></h1>
+        <p class="intro-body">A few quick questions so we can be completely honest with you about availability, timing, and whether this experience is what you're looking for — before we take up each other's time.</p>
+        <button class="intro-cta" onclick="goNext()">
+          Get Started
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <p class="intro-trust">Takes under two minutes &nbsp;·&nbsp; No obligation</p>
+      </div>`;
+    return;
+  }
+
+  // ── RESULT ROUTING ─────────────────────────────────────────────────
+  if (currentStep >= STEPS.length) {
+    shell.style.display = 'none'; nav.style.display = 'none';
+
+    const service = state.service;
+    const budg    = state.budget;
+    const dv      = state.dueDateValid;
+
+    // 1. Budget declined — unmatch + redirect
+    if (budg === 'no') { renderBudgetUnmatch(content); return; }
+
+    // 2. Experience panel requested — show offer details
+    if (budg === 'learn') { renderExperience(content); return; }
+
+    // 3. Due date timing unqualified (regardless of budget) — unmatch
+    if (dv === 'unqualified') {
+      if (service === 'newborn') { renderNewbornUnmatch(content); return; }
+      renderMaternityUnmatch(content); return;
+    }
+
+    // 4. Early maternity (tooEarly) — only reaches here AFTER price + contact steps passed
+    //    Route to Klaviyo capture instead of Sprout
+    if (dv === 'tooEarly') { renderKlavCapture(content); return; }
+
+    // 5. Fully qualified — Sprout form
+    renderQualified(content);
+    return;
+  }
+
+  // ── ACTIVE QUIZ STEP ───────────────────────────────────────────────
+  const active = activeSteps();
+  const posNow = active.indexOf(currentStep);
+  const step   = STEPS[currentStep];
+  const total  = active.length;
+  const pct    = Math.round(((posNow + 1) / total) * 100);
+
+  shell.style.display = 'block'; nav.style.display = 'flex';
+  fill.style.width = pct + '%';
+  stepLbl.textContent = 'Step ' + (posNow + 1) + ' of ' + total;
+  pctLbl.textContent  = pct + '%';
+
+  btnBack.style.display = posNow === 0 ? 'none' : '';
+  btnNext.disabled = needsSelection(step);
+  btnNext.textContent = posNow === total - 1 ? 'See My Availability \u2192' : 'Continue \u2192';
+
+  // Dots
+  dotsEl.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === posNow ? ' active' : i < posNow ? ' done' : '');
+    dotsEl.appendChild(d);
+  }
+
+  // Step content
+  if (step.type === 'duedate') {
+    renderDueDateStep(content, step);
+  } else if (step.type === 'options') {
+    renderOptionsStep(content, step);
+  } else if (step.type === 'contact') {
+    renderContactStep(content, step);
+  }
+
+  scrollToTop();
+}
+
+function needsSelection(step) {
+  if (step.type === 'options')  return !state[step.id];
+  if (step.type === 'duedate')  return !state.dueDate;
+  if (step.type === 'contact')  return true; // will enable via oninput
+  return false;
+}
+
+// ── Due Date Step ───────────────────────────────────────────────────
+function renderDueDateStep(content, step) {
+  const isNewborn = state.service === 'newborn';
+  const hed = isNewborn
+    ? 'When is your baby due?'
+    : 'When is your baby due?';
+  const hint = isNewborn
+    ? 'Newborn sessions are best within the first two weeks of life — your due date helps us confirm availability.'
+    : 'Your due date helps us find your ideal session timing.';
+
+  const savedNote = state.dueDateNote || '';
+
+  content.innerHTML = `
+    <div class="question-wrap">
+      <h2 class="question-headline">${hed}</h2>
+      <p class="question-hint">${hint}</p>
+      <div class="date-field-wrap">
+        <input type="date" class="date-field" id="dateInput"
+          value="${state.dueDate || ''}"
+          onchange="handleDueDateChange()">
+      </div>
+      <div id="dateNote" style="margin-top:10px">${savedNote}</div>
+      <p class="val-msg" id="valMsg"></p>
+    </div>`;
+
+  if (state.dueDate) document.getElementById('btnNext').disabled = false;
+}
+
+function handleDueDateChange() {
+  const val  = document.getElementById('dateInput').value;
+  const note = document.getElementById('dateNote');
+  const btn  = document.getElementById('btnNext');
+
+  if (!val) { btn.disabled = true; note.innerHTML = ''; return; }
+
+  state.dueDate = val;
+  const q = qualifyDueDate(val);
+  state.dueDateValid  = q.valid;
+  state.dueDateReason = q.reason || null;
+  state.klavWindowOpens = q.klavWindowOpens || null;
+
+  if (q.noteHtml) {
+    note.innerHTML = `<div style="background:var(--surface);border:1px solid var(--border);border-left:2px solid var(--gold);border-radius:4px;padding:12px 14px;font-size:12.5px;line-height:1.6;color:var(--text2)">${q.noteHtml}</div>`;
+    state.dueDateNote = note.innerHTML;
+  } else {
+    note.innerHTML = '';
+    state.dueDateNote = '';
+  }
+  // Store klavWindowOpens if present
+  if (q.klavWindowOpens) state.klavWindowOpens = q.klavWindowOpens;
+
+  btn.disabled = false;
+}
+
+// ── Options Step ────────────────────────────────────────────────────
+function renderOptionsStep(content, step) {
+  content.innerHTML = `
+    <div class="question-wrap">
+      <h2 class="question-headline">${step.label}</h2>
+      ${step.hint ? '<p class="question-hint">' + step.hint + '</p>' : ''}
+      <div class="options-list">
+        ${step.options.map(o => `
+          <button class="opt-btn ${state[step.id] === o.value ? 'selected' : ''}"
+            onclick="selectOpt('${step.id}','${o.value}',this)">
+            <span class="opt-check"></span>
+            <span class="opt-text">
+              <span class="opt-label">${o.label}</span>
+              ${o.sub ? '<span class="opt-sub">' + o.sub + '</span>' : ''}
+            </span>
+          </button>`).join('')}
+      </div>
+      <p class="val-msg" id="valMsg"></p>
+    </div>`;
+}
+
+// ── Contact Step ────────────────────────────────────────────────────
+function renderContactStep(content, step) {
+  document.getElementById('btnNext').disabled = true;
+  content.innerHTML = `
+    <div class="question-wrap">
+      <h2 class="question-headline">${step.label}</h2>
+      <p class="question-hint">${step.hint}</p>
+      <div class="text-field-group">
+        <input type="text"  class="text-field" id="cName"  placeholder="Your name"
+          value="${state.name || ''}" oninput="checkContact()">
+        <input type="email" class="text-field" id="cEmail" placeholder="Email address"
+          value="${state.email || ''}" oninput="checkContact()">
+        <input type="tel"   class="text-field" id="cPhone" placeholder="Phone (optional)"
+          value="${state.phone || ''}">
+      </div>
+      <p class="val-msg" id="valMsg"></p>
+    </div>`;
+
+  if (state.name && state.email) checkContact();
+}
+
+function checkContact() {
+  const name  = (document.getElementById('cName')  || {}).value?.trim() || '';
+  const email = (document.getElementById('cEmail') || {}).value?.trim() || '';
+  const valid = name.length > 1 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  document.getElementById('btnNext').disabled = !valid;
+}
+
+// =====================================================================
+//  RESULT RENDERERS
+// =====================================================================
+
+// ── Qualified + Sprout form ─────────────────────────────────────────
+function renderQualified(content) {
+  const service = state.service;
+  const timing  = state.timing;
+  const spotMap = { aug: SPOTS.aug + ' spots remaining in August', sep: SPOTS.sep + ' spots remaining in September', oct: SPOTS.oct + ' spots remaining in October' };
+
+  let bodyText = '', spotText = '';
+
+  if (['maternity','boudoir'].includes(service)) {
+    bodyText = 'Based on your due date, the timing works beautifully. We have limited sessions available from August through October — fill out the form below and we\'ll be in touch within one business day to confirm your spot.';
+  } else if (service === 'newborn') {
+    bodyText = 'Your timing is perfect. Fill out the form below and we\'ll reach out right away to confirm your newborn session.';
+  } else if (timing) {
+    spotText = spotMap[timing] || '';
+    bodyText = spotText
+      ? `We have <strong>${spotText}</strong>. Fill out the form below and we'll be in touch within one business day.`
+      : 'We\'d love to connect. Fill out the short form below and we\'ll be in touch.';
+  }
+
+  content.innerHTML = `
+    <div class="qualified-screen">
+      <p class="result-eyebrow">You're in the right place</p>
+      <h2 class="qualified-headline">We'd love to work<br>with you.</h2>
+      <p class="qualified-sub">${bodyText}</p>
+      ${spotText ? `<span class="spots-badge">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        ${spotText}
+      </span>` : ''}
+      <div class="inquire-bar">
+        <span class="inquire-or">Or reach us directly</span>
+        <div class="inquire-links">
+          <a href="sms:+12482746361" class="contact-link contact-link-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Text (248) 274-6361
+          </a>
+          <a href="mailto:jasmine@twowildsoulsphotography.com" class="contact-link contact-link-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Email Us
+          </a>
+        </div>
+      </div>
+      <div class="sprout-wrapper">
+        <script data-api-key='978ed6bcbdd09330c97f89c42f105ffc893f137059b47de5' data-lead-form-id='1808192' data-base-hostname='sproutstudio.com' src='//sproutstudio.com/sprout_dynamic_lead_form.js'><\/script>
+      </div>
+    </div>`;
+}
+
+// ── Experience / Offer panel ─────────────────────────────────────────
+function renderExperience(content) {
+  document.getElementById('progressShell').style.display = 'none';
+  document.getElementById('bottomNav').style.display     = 'none';
+
+  content.innerHTML = `
+    <div class="question-wrap" style="padding-top:28px">
+      <p class="intro-eyebrow">Your Stress-Free Experience</p>
+      <h2 class="question-headline" style="margin-bottom:20px">Here's exactly what's included.</h2>
+
+      <div class="offer-panel">
+        <div class="offer-panel-hed">Every detail is intentional.</div>
+        <div class="offer-panel-sub">Starting at $1,290 — average client investment $3,000.</div>
+
+        <div class="offer-items">
+          <div class="offer-item"><div class="offer-icon">✦</div><div>
+            <div class="offer-item-title">Professional Hair &amp; Makeup</div>
+            <div class="offer-item-desc">Arrive camera-ready with complimentary professional hair and makeup artistry — confident, polished, and fully taken care of.</div>
+          </div></div>
+          <div class="offer-item"><div class="offer-icon">✦</div><div>
+            <div class="offer-item-title">In-Home Planning &amp; Design Consult</div>
+            <div class="offer-item-desc">We begin with an in-home consultation to understand your vision, curate styling, and plan how your portraits will live in your space.</div>
+          </div></div>
+          <div class="offer-item"><div class="offer-icon">✦</div><div>
+            <div class="offer-item-title">Perfection Without Time Constraints</div>
+            <div class="offer-item-desc">Your session unfolds naturally — no clock, no rushing. Change outfits, explore locations, and enjoy every moment.</div>
+          </div></div>
+          <div class="offer-item"><div class="offer-icon">✦</div><div>
+            <div class="offer-item-title">Private Reveal Appointment</div>
+            <div class="offer-item-desc">An intimate viewing experience where we unveil your gallery and guide you through selecting artwork designed to become lasting heirlooms.</div>
+          </div></div>
+          <div class="offer-item"><div class="offer-icon">✦</div><div>
+            <div class="offer-item-title">7–10 Business Day Delivery</div>
+            <div class="offer-item-desc">Your curated collection is professionally prepared and ready to be enjoyed in your home — faster than you'd expect.</div>
+          </div></div>
+          <div class="offer-item"><div class="offer-icon">✦</div><div>
+            <div class="offer-item-title">Wall Art Installation &amp; Warranty</div>
+            <div class="offer-item-desc">Every piece includes master retouching, professional installation, and a limited lifetime warranty.</div>
+          </div></div>
+        </div>
+
+        <div class="offer-process">
+          <div class="offer-process-lbl">Our White Glove Process</div>
+          <div class="process-steps">
+            <div class="process-step"><div class="process-num">1</div>
+              <div class="process-text"><strong>Begin the Conversation</strong>
+                <em>A relaxed consultation to understand your vision and ensure we're the right fit.</em></div></div>
+            <div class="process-step"><div class="process-num">2</div>
+              <div class="process-text"><strong>Expertly Curated Experience</strong>
+                <em>Thoughtful planning, wardrobe guidance, and gentle direction so you feel confident and present.</em></div></div>
+            <div class="process-step"><div class="process-num">3</div>
+              <div class="process-text"><strong>Heirloom Delivered</strong>
+                <em>A guided artwork selection — finished pieces for your home that are beautiful, tangible, and lasting.</em></div></div>
+          </div>
+        </div>
+
+        <div class="offer-investment">
+          Begins at <strong>$1,290</strong> · Average investment <strong>$3,000</strong> · No hidden fees · No surprises.
+        </div>
+      </div>
+
+      <div class="exp-btn-group">
+        <button class="btn-next" style="font-size:13px;letter-spacing:0.14em;text-transform:uppercase;font-weight:600;padding:16px;border-radius:4px;cursor:pointer;border:none;background:var(--cta);color:var(--cta-text)"
+          onclick="experienceDecision('yes')">I'm Ready — Let's Do This</button>
+        <button class="btn-ghost" onclick="experienceDecision('no')">Not the Right Time</button>
+      </div>
+    </div>`;
+}
+
+function experienceDecision(val) {
+  state.budget = val;
+  state.cameFromExperience = true;
+  if (val === 'no') {
+    currentStep = STEPS.length; render();
+  } else {
+    // Find contact step and go there
+    const contactIdx = STEPS.findIndex(s => s.id === 'contact');
+    currentStep = contactIdx;
+    render();
+  }
+}
+
+// ── Maternity unmatch ─────────────────────────────────────────────
+function renderMaternityUnmatch(content) {
+  document.getElementById('progressShell').style.display = 'none';
+  document.getElementById('bottomNav').style.display     = 'none';
+  content.innerHTML = `
+    <div class="result-screen">
+      <span class="result-icon">🤍</span>
+      <p class="result-eyebrow">Availability Notice</p>
+      <h2 class="result-headline">We wish we could <em>make it work.</em></h2>
+      <p class="result-body">For the most beautiful results, maternity sessions are photographed between 20 and 32 weeks. Based on your due date, that window falls outside our current availability.</p>
+      <p class="result-body">We'd love to connect for a <strong>newborn, family, or future session</strong> when the timing is right.</p>
+    </div>`;
+}
+
+// ── Newborn unmatch ───────────────────────────────────────────────
+function renderNewbornUnmatch(content) {
+  document.getElementById('progressShell').style.display = 'none';
+  document.getElementById('bottomNav').style.display     = 'none';
+  content.innerHTML = `
+    <div class="result-screen">
+      <span class="result-icon">🤍</span>
+      <p class="result-eyebrow">Availability Notice</p>
+      <h2 class="result-headline">The timing isn't quite right — <em>but let's talk.</em></h2>
+      <p class="result-body">Newborn sessions are best within the first 14 days of life, and we're currently only scheduling for babies arriving the last week of July. We want to make sure your little one gets the session they deserve.</p>
+      <p class="result-body">Reach out directly and we'll see if we can make something work, or get you first in line when the right window opens.</p>
+      <div class="contact-links">
+        <a href="${SMS_HREF}" class="contact-link contact-link-primary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Text Us &nbsp;${PHONE_DISPLAY}
+        </a>
+        <a href="${EMAIL_HREF}" class="contact-link contact-link-outline">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email Us
+        </a>
+      </div>
+    </div>`;
+}
+
+// ── Budget unmatch → timed redirect ──────────────────────────────
+function renderBudgetUnmatch(content) {
+  document.getElementById('progressShell').style.display = 'none';
+  document.getElementById('bottomNav').style.display     = 'none';
+
+  content.innerHTML = `
+    <div class="redirect-screen">
+      <div class="redirect-notice">
+        <span class="redirect-notice-icon">🤍</span>
+        <h2 class="redirect-notice-title">We appreciate your honesty.</h2>
+        <p class="redirect-notice-body">Our sessions start at $1,290 — and we want to be upfront so you can plan with confidence. When you're ready to make this investment in yourself or your family, <strong>we'd love to be your photographer.</strong></p>
+        <p class="redirect-notice-body" style="margin-top:10px">In the meantime, explore our work and follow along on Instagram to see what we create together.</p>
+      </div>
+      <div class="redirect-countdown">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Taking you to our website in <span class="redirect-countdown-num" id="countdownNum">${BUDGET_REDIRECT_DELAY}</span> seconds
+      </div>
+    </div>`;
+
+  let secs = BUDGET_REDIRECT_DELAY;
+  const numEl = document.getElementById('countdownNum');
+  const timer = setInterval(function() {
+    secs--;
+    if (numEl) numEl.textContent = secs;
+    if (secs <= 0) {
+      clearInterval(timer);
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'tws-qualify-close', reason: 'budget' }, '*');
+        }
+      } catch(e) {}
+      window.location.href = MAIN_SITE;
+    }
+  }, 1000);
+}
+
+// ── Early maternity → Klaviyo ─────────────────────────────────────
+// By the time we reach here, the lead has already passed budget + contact steps.
+// state.name, state.email, state.dueDate, state.klavWindowOpens are all populated.
+// We auto-submit immediately rather than asking them to re-enter info.
+function renderKlavCapture(content) {
+  document.getElementById('progressShell').style.display = 'none';
+  document.getElementById('bottomNav').style.display     = 'none';
+
+  const winDate = state.klavWindowOpens || '';
+  const winFmt  = winDate ? formatDate(new Date(winDate + 'T12:00:00')) : 'the right time';
+
+  content.innerHTML = `
+    <div class="klav-screen">
+      <p class="result-eyebrow">Your spot is reserved</p>
+      <h2 class="klav-headline">We'll reach out when <em>your window opens.</em></h2>
+      <p class="klav-body">Your ideal session timing opens around <strong>${winFmt}</strong> — near your anatomy scan. We've noted your details and will be in touch at exactly the right time with everything you need to plan your session.</p>
+      <div id="klav-status" style="font-size:13px;color:var(--text2);margin-bottom:20px">Saving your spot…</div>
+      <div class="inquire-bar">
+        <span class="inquire-or">Can't wait? Reach us directly</span>
+        <div class="inquire-links">
+          <a href="sms:+12482746361" class="contact-link contact-link-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Text (248) 274-6361
+          </a>
+          <a href="mailto:jasmine@twowildsoulsphotography.com" class="contact-link contact-link-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Email Us
+          </a>
+        </div>
+      </div>
+    </div>`;
+
+  // Auto-submit since we already have their info from the contact step
+  submitKlaviyo();
+}
+
+function checkKlav() {
+  // No-op — kept for safety, submitKlaviyo reads from state directly
+}
+
+async function submitKlaviyo() {
+  // Pull from state — contact step ran before this, so name/email are set
+  const name      = state.name  || '';
+  const email     = state.email || '';
+  const statusEl  = document.getElementById('klav-status');
+  if (!statusEl) return;
+
+  if (!name || !email) {
+    statusEl.style.color = 'var(--error)';
+    statusEl.textContent = 'Something went wrong — please email us directly.';
+    return;
+  }
+
+  statusEl.style.color = 'var(--text2)';
+  statusEl.textContent = 'Saving your spot…';
+
+  const parts     = name.split(' ');
+  const firstName = parts[0];
+  const lastName  = parts.slice(1).join(' ');
+  const dueDate   = state.dueDate || '';
+  const winDate   = state.klavWindowOpens || '';
+
+  try {
+    // 1. Create/update profile with custom properties
+    await fetch(`https://a.klaviyo.com/client/profiles/?company_id=${KLAV_PUBLIC}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', revision: '2023-12-15' },
+      body: JSON.stringify({ data: { type: 'profile', attributes: {
+        email, first_name: firstName, last_name: lastName,
+        properties: { tws_due_date: dueDate, tws_window_opens_date: winDate }
+      }}})
+    });
+
+    // 2. Subscribe to list
+    const subRes = await fetch(`https://a.klaviyo.com/client/subscriptions/?company_id=${KLAV_PUBLIC}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', revision: '2023-12-15' },
+      body: JSON.stringify({ data: {
+        type: 'subscription',
+        attributes: { profile: { data: { type: 'profile', attributes: { email, first_name: firstName, last_name: lastName }}}},
+        relationships: { list: { data: { type: 'list', id: KLAV_LIST }}}
+      }})
+    });
+
+    if (subRes.status === 202 || subRes.ok) {
+      statusEl.style.color = 'var(--gold)';
+      statusEl.textContent = '✓ You\'re on the list. We\'ll be in touch right around your anatomy scan.';
+    } else {
+      throw new Error('status ' + subRes.status);
+    }
+  } catch (err) {
+    statusEl.style.color = 'var(--error)';
+    statusEl.textContent = 'Something didn\'t save — please email us directly or text us and we\'ll get you sorted.';
+  }
+}
+
+// =====================================================================
+//  NAVIGATION
+// =====================================================================
+function selectOpt(id, value, el) {
+  state[id] = value;
+  document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('btnNext').disabled = false;
+  setTimeout(goNext, 280);
+}
+
+function goNext() {
+  if (currentStep === -1) {
+    const active = activeSteps();
+    currentStep = active[0];
+    render(); return;
+  }
+
+  const step   = STEPS[currentStep];
+  const active = activeSteps();
+  const posNow = active.indexOf(currentStep);
+
+  // Due date: only hard-unqualified short-circuits to result screen.
+  // 'tooEarly' must still go through budget + contact before hitting Klaviyo.
+  if (step && step.type === 'duedate') {
+    if (!state.dueDate) return;
+    if (state.dueDateValid === 'unqualified') {
+      currentStep = STEPS.length; render(); return;
+    }
+    // 'good' and 'tooEarly' fall through to next active step (budget)
+  }
+
+  // Contact step: validate + save
+  if (step && step.type === 'contact') {
+    const name  = (document.getElementById('cName')  || {}).value?.trim() || '';
+    const email = (document.getElementById('cEmail') || {}).value?.trim() || '';
+    if (!name || !email) return;
+    state.name  = name;
+    state.email = email;
+    state.phone = (document.getElementById('cPhone') || {}).value?.trim() || '';
+
+    // If early maternity, go to Klaviyo result
+    if (state.dueDateValid === 'tooEarly') { currentStep = STEPS.length; render(); return; }
+    currentStep = STEPS.length; render(); return;
+  }
+
+  // Budget routing
+  if (step && step.type === 'options' && step.id === 'budget') {
+    if (state.budget === 'no' || state.budget === 'learn') {
+      currentStep = STEPS.length; render(); return;
+    }
+  }
+
+  if (posNow < active.length - 1) {
+    currentStep = active[posNow + 1];
+  } else {
+    currentStep = STEPS.length;
+  }
+  render();
+}
+
+function goBack() {
+  if (currentStep === -1) return;
+
+  if (currentStep >= STEPS.length) {
+    const budgetIdx = STEPS.findIndex(s => s.id === 'budget');
+    currentStep = budgetIdx;
+    state.cameFromExperience = false;
+    render(); return;
+  }
+
+  const active = activeSteps();
+  const posNow = active.indexOf(currentStep);
+  if (posNow > 0) {
+    currentStep = active[posNow - 1];
+  } else {
+    currentStep = -1;
+  }
+  render();
+}
+
+// =====================================================================
+//  SHOWIT POPUP SUPPORT
+// =====================================================================
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'tws-qualify-open') {
+    currentStep = -1; render();
+  }
+});
+
+document.addEventListener('click', function(e) {
+  if (e.target && e.target.closest && e.target.closest('[data-lead-form-id]')) {
+    setTimeout(function() {
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'tws-qualify-complete' }, '*');
+        }
+      } catch(err) {}
+    }, 2000);
+  }
+});
+
+if (window.self !== window.top || new URLSearchParams(window.location.search).has('popup')) {
+  document.body.classList.add('popup-mode');
+}
+
+// =====================================================================
+//  INIT
+// =====================================================================
+render();
+</script>
+</body>
+</html>
