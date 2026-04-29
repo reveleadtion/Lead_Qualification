@@ -244,6 +244,58 @@ main {
   appearance: none; -webkit-appearance: none;
 }
 .text-field::placeholder { color: var(--text2); }
+select.text-field {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B6860' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+textarea.text-field {
+  resize: none;
+  min-height: 90px;
+  line-height: 1.55;
+}
+/* Sprout native form — hidden now */
+.sprout-wrapper { display: none; }
+/* Custom Sprout submission form */
+.sprout-form { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.sprout-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sprout-submit {
+  background: var(--cta); color: var(--cta-text);
+  border: none; border-radius: 4px;
+  padding: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-weight: 600; font-size: 13px;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  cursor: pointer; transition: opacity 0.2s; margin-top: 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+.sprout-submit:hover { opacity: 0.85; }
+.sprout-submit:disabled { opacity: 0.35; cursor: not-allowed; }
+#sprout-status {
+  font-size: 12.5px; color: var(--gold);
+  min-height: 18px; margin-top: 4px;
+}
+#sprout-status.error { color: var(--error); }
+.success-screen {
+  text-align: center; padding: 40px 0 20px;
+  animation: fadeUp 0.4s ease both;
+}
+.success-icon {
+  font-size: 2.5rem; margin-bottom: 16px; display: block;
+}
+.success-headline {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(24px, 6vw, 34px);
+  font-weight: 300; line-height: 1.2;
+  color: var(--text); margin-bottom: 10px;
+}
+.success-headline em { font-style: italic; color: var(--gold); }
+.success-body {
+  font-size: 13.5px; color: var(--text2);
+  line-height: 1.7; max-width: 440px; margin: 0 auto;
+}
 .text-field:focus { border-color: var(--gold); }
 
 /* ── Date input ──────────────────────────────────────────────────────── */
@@ -609,8 +661,21 @@ const MAIN_SITE     = 'https://twowildsoulsphotography.com';
 const BUDGET_REDIRECT_DELAY = 8; // seconds before redirecting budget unmatch
 
 // Klaviyo
-const KLAV_PUBLIC  = 'WgMSBs';
-const KLAV_LIST    = 'V3bUGq';
+const KLAV_PUBLIC        = 'WgMSBs';
+const KLAV_LIST_MATERNITY = 'V3bUGq';   // Early maternity (<18wks at open)
+const KLAV_LIST_SENIOR    = 'SvpksB';   // Senior waitlist 2028+
+const KLAV_LIST_UNIVERSAL = 'SvpksB';   // Later/flexible — family, branding, beauty, future newborn
+
+// Service page URLs for Klaviyo flow CTAs
+const SERVICE_URLS = {
+  maternity: 'https://twowildsoulsphotography.com/metro-detroit-maternity-photography',
+  boudoir:   'https://twowildsoulsphotography.com/metro-detroit-maternity-boudoir-photography',
+  senior:    'https://twowildsoulsphotography.com/metro-detroit-senior-photography',
+  family:    'https://twowildsoulsphotography.com/metro-detroit-family-photography',
+  newborn:   'https://twowildsoulsphotography.com/detroit-newborn-photographer-ads',
+  branding:  'https://twowildsoulsphotography.com',
+  beauty:    'https://twowildsoulsphotography.com',
+};
 
 // Spot counts (update manually when calendar fills)
 const SPOTS = { aug: 3, sep: 5, oct: 5 };
@@ -625,7 +690,10 @@ const state = {
   dueDateReason: null,
   klavWindowOpens: null,
   timing: null,
+  gradYear: null,        // e.g. 'spring2028' — seniors with later timing
   budget: null,
+  firstName: null,
+  lastName: null,
   name: null,
   email: null,
   phone: null,
@@ -663,6 +731,16 @@ const STEPS = [
       { value: 'sep',   label: 'September',       sub: SPOTS.sep + ' spots remaining' },
       { value: 'oct',   label: 'October',         sub: SPOTS.oct + ' spots remaining' },
       { value: 'later', label: 'Later / Flexible', sub: null },
+    ]
+  },
+  { id: 'gradyear', type: 'options', label: 'What year does your senior graduate?',
+    hint: 'This helps us find the right spot on our calendar for you.',
+    showIf: () => state.service === 'senior' && state.timing === 'later',
+    options: [
+      { value: 'spring2026', label: 'Spring 2026', sub: 'Senior session this summer' },
+      { value: 'spring2027', label: 'Spring 2027', sub: 'Session in summer 2026' },
+      { value: 'spring2028', label: 'Spring 2028', sub: 'Session in summer 2027' },
+      { value: 'spring2029', label: 'Spring 2029', sub: 'Session in summer 2028' },
     ]
   },
   { id: 'budget',  type: 'options', label: 'A quick note on investment.',
@@ -846,7 +924,18 @@ function render() {
     //    Route to Klaviyo capture instead of Sprout
     if (dv === 'tooEarly') { renderKlavCapture(content); return; }
 
-    // 5. Fully qualified — Sprout form
+    // 5. Senior 2028+ → Klaviyo senior waitlist
+    if (service === 'senior' && state.timing === 'later' && state.gradYear &&
+        parseInt(state.gradYear.replace('spring',''), 10) >= 2028) {
+      renderKlavSenior(content); return;
+    }
+
+    // 6. Later/flexible timing (non-pregnancy, non-senior-waitlist) → Klaviyo universal
+    if (state.timing === 'later') {
+      renderKlavUniversal(content); return;
+    }
+
+    // 7. Fully qualified — Sprout form
     renderQualified(content);
     return;
   }
@@ -977,8 +1066,12 @@ function renderContactStep(content, step) {
       <h2 class="question-headline">${step.label}</h2>
       <p class="question-hint">${step.hint}</p>
       <div class="text-field-group">
-        <input type="text"  class="text-field" id="cName"  placeholder="Your name"
-          value="${state.name || ''}" oninput="checkContact()">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <input type="text" class="text-field" id="cFirstName" placeholder="First name"
+            value="${state.firstName || ''}" oninput="checkContact()" style="margin-bottom:0">
+          <input type="text" class="text-field" id="cLastName"  placeholder="Last name"
+            value="${state.lastName  || ''}" oninput="checkContact()" style="margin-bottom:0">
+        </div>
         <input type="email" class="text-field" id="cEmail" placeholder="Email address"
           value="${state.email || ''}" oninput="checkContact()">
         <input type="tel"   class="text-field" id="cPhone" placeholder="Phone (optional)"
@@ -987,13 +1080,13 @@ function renderContactStep(content, step) {
       <p class="val-msg" id="valMsg"></p>
     </div>`;
 
-  if (state.name && state.email) checkContact();
+  if (state.firstName && state.email) checkContact();
 }
 
 function checkContact() {
-  const name  = (document.getElementById('cName')  || {}).value?.trim() || '';
-  const email = (document.getElementById('cEmail') || {}).value?.trim() || '';
-  const valid = name.length > 1 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const first = (document.getElementById('cFirstName') || {}).value?.trim() || '';
+  const email = (document.getElementById('cEmail')     || {}).value?.trim() || '';
+  const valid = first.length > 1 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   document.getElementById('btnNext').disabled = !valid;
 }
 
@@ -1001,14 +1094,39 @@ function checkContact() {
 //  RESULT RENDERERS
 // =====================================================================
 
-// ── Qualified + Sprout form ─────────────────────────────────────────
+// ── Qualified + Sprout custom form ──────────────────────────────────
+const SERVICE_LABELS = {
+  maternity: 'Maternity Session',
+  boudoir:   'Boudoir Maternity Session',
+  newborn:   'Newborn Session',
+  senior:    'Senior Portraits',
+  family:    'Family Session',
+  branding:  'Branding / Headshots',
+  beauty:    'Beauty / Other',
+};
+
+function buildQualifiedNote() {
+  // Auto-fill additional context into notes for Sprout
+  const parts = [];
+  if (state.dueDate) {
+    const d = new Date(state.dueDate + 'T12:00:00');
+    parts.push('Due date: ' + d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}));
+  }
+  if (state.timing && state.timing !== 'later') {
+    const map = { aug: 'August', sep: 'September', oct: 'October' };
+    parts.push('Preferred timing: ' + (map[state.timing] || state.timing));
+  }
+  if (state.gradYear) parts.push('Grad year: ' + state.gradYear.replace('spring','Spring ').replace('fall','Fall '));
+  parts.push('Source: qualifier form');
+  return parts.join(' | ');
+}
+
 function renderQualified(content) {
   const service = state.service;
   const timing  = state.timing;
   const spotMap = { aug: SPOTS.aug + ' spots remaining in August', sep: SPOTS.sep + ' spots remaining in September', oct: SPOTS.oct + ' spots remaining in October' };
 
   let bodyText = '', spotText = '';
-
   if (['maternity','boudoir'].includes(service)) {
     bodyText = 'Based on your due date, the timing works beautifully. We have limited sessions available from August through October — fill out the form below and we\'ll be in touch within one business day to confirm your spot.';
   } else if (service === 'newborn') {
@@ -1016,37 +1134,121 @@ function renderQualified(content) {
   } else if (timing) {
     spotText = spotMap[timing] || '';
     bodyText = spotText
-      ? `We have <strong>${spotText}</strong>. Fill out the form below and we\'ll be in touch within one business day.`
+      ? 'We have <strong>' + spotText + '</strong>. Fill out the form below and we\'ll be in touch within one business day.'
       : 'We\'d love to connect. Fill out the short form below and we\'ll be in touch.';
   }
 
+  const svcOptions = Object.entries(SERVICE_LABELS).map(([v, l]) =>
+    '<option value="' + v + '"' + (v === service ? ' selected' : '') + '>' + l + '</option>'
+  ).join('');
+
+  const noteDefault = buildQualifiedNote();
+
   content.innerHTML = `
     <div class="qualified-screen">
-      <p class="result-eyebrow">You\'re in the right place</p>
+      <p class="result-eyebrow">Reserve Your Session</p>
       <h2 class="qualified-headline">We\'d love to work<br>with you.</h2>
       <p class="qualified-sub">${bodyText}</p>
-      ${spotText ? `<span class="spots-badge">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-        ${spotText}
-      </span>` : ''}
-      <div class="inquire-bar">
-        <span class="inquire-or">Or reach us directly</span>
+      ${spotText ? '<span class="spots-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>' + spotText + '</span>' : ''}
+
+      <div class="sprout-form" id="sproutForm">
+        <div class="sprout-form-row">
+          <input type="text"  class="text-field" id="sf-first" placeholder="First name"
+            value="${state.firstName || ''}" oninput="checkSproutForm()" style="margin-bottom:0">
+          <input type="text"  class="text-field" id="sf-last"  placeholder="Last name"
+            value="${state.lastName  || ''}" oninput="checkSproutForm()" style="margin-bottom:0">
+        </div>
+        <input type="email" class="text-field" id="sf-email" placeholder="Email address"
+          value="${state.email || ''}" oninput="checkSproutForm()">
+        <input type="tel"   class="text-field" id="sf-phone" placeholder="Phone number"
+          value="${state.phone || ''}" oninput="checkSproutForm()">
+        <select class="text-field" id="sf-session" onchange="checkSproutForm()">
+          <option value="" disabled>Session type</option>
+          ${svcOptions}
+        </select>
+        <textarea class="text-field" id="sf-notes" placeholder="Tell us a little about what you\'re envisioning…"
+          oninput="checkSproutForm()">${noteDefault}</textarea>
+        <button class="sprout-submit" id="sproutSubmitBtn" onclick="submitSprout()" disabled>
+          Reserve Your Session &#8594;
+        </button>
+        <div id="sprout-status"></div>
+      </div>
+
+      <div class="inquire-bar" style="margin-top:20px">
+        <span class="inquire-or">Prefer to reach us directly</span>
         <div class="inquire-links">
-          <a href="sms:+12482746361" class="contact-link contact-link-outline">
+          <a href="${SMS_HREF}" class="contact-link contact-link-outline">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             Text (248) 274-6361
           </a>
-          <a href="mailto:jasmine@twowildsoulsphotography.com" class="contact-link contact-link-outline">
+          <a href="${EMAIL_HREF}" class="contact-link contact-link-outline">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
             Email Us
           </a>
         </div>
       </div>
-      <div class="sprout-wrapper">
-        <script data-api-key='978ed6bcbdd09330c97f89c42f105ffc893f137059b47de5' data-lead-form-id='1808192' data-base-hostname='sproutstudio.com' src='//sproutstudio.com/sprout_dynamic_lead_form.js'><\/script>
-      </div>
     </div>`;
+
+  // Enable button if state already has valid data
+  checkSproutForm();
 }
+
+function checkSproutForm() {
+  const first   = (document.getElementById('sf-first')   || {}).value?.trim() || '';
+  const email   = (document.getElementById('sf-email')   || {}).value?.trim() || '';
+  const phone   = (document.getElementById('sf-phone')   || {}).value?.trim() || '';
+  const session = (document.getElementById('sf-session') || {}).value || '';
+  const valid   = first.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+                  && phone.length > 6 && session !== '';
+  const btn = document.getElementById('sproutSubmitBtn');
+  if (btn) btn.disabled = !valid;
+}
+
+async function submitSprout() {
+  const btn     = document.getElementById('sproutSubmitBtn');
+  const statusEl = document.getElementById('sprout-status');
+  if (btn) btn.disabled = true;
+  statusEl.className = '';
+  statusEl.textContent = 'Sending\u2026';
+
+  const first   = document.getElementById('sf-first').value.trim();
+  const last    = document.getElementById('sf-last').value.trim();
+  const email   = document.getElementById('sf-email').value.trim();
+  const phone   = document.getElementById('sf-phone').value.trim();
+  const session = document.getElementById('sf-session').value;
+  const notes   = document.getElementById('sf-notes').value.trim();
+  const sessionLabel = SERVICE_LABELS[session] || session;
+
+  try {
+    const res = await fetch('/api/sprout', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ first, last, email, phone, session: sessionLabel, notes })
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (res.ok && data.success !== false) {
+            // Swap form for success screen
+      const form = document.getElementById('sproutForm');
+      if (form) {
+        const div = document.createElement('div');
+        div.className = 'success-screen';
+        div.innerHTML = '<span class="success-icon">✨</span>'
+          + '<h2 class="success-headline">You\'re all set.<br><em>We\'ll be in touch soon.</em></h2>'
+          + '<p class="success-body">We received your request and will follow up within one business day to confirm everything. We can\'t wait to work with you.</p>';
+        form.parentNode.replaceChild(div, form);
+      }
+    } else {
+      throw new Error(data.error || 'Submission failed');
+    }
+  } catch (err) {
+    statusEl.className = 'error';
+    statusEl.textContent = 'Something didn\'t go through — please text or email us directly.';
+    if (btn) btn.disabled = false;
+  }
+}
+
 
 // ── Experience / Offer panel ─────────────────────────────────────────
 function renderExperience(content) {
@@ -1349,60 +1551,170 @@ function checkKlav() {
   // No-op — kept for safety, submitKlaviyo reads from state directly
 }
 
-async function submitKlaviyo() {
-  // Pull from state — contact step ran before this, so name/email are set
-  const name      = state.name  || '';
-  const email     = state.email || '';
-  const statusEl  = document.getElementById('klav-status');
-  if (!statusEl) return;
+// ── Klaviyo property builders ─────────────────────────────────────────
 
+function buildMaternityProps() {
+  const today   = new Date(); today.setHours(0,0,0,0);
+  const dueDate = state.dueDate || '';
+  const winDate = state.klavWindowOpens || '';
+  const dueFmt  = dueDate
+    ? new Date(dueDate + 'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})
+    : '';
+  const weeksNow = dueDate
+    ? Math.max(1, Math.round(40 - (new Date(dueDate+'T12:00:00') - today) / MS_WEEK))
+    : '';
+  return {
+    '$phone_number_region': 'US',
+    '$source':               'early_optin_embed',
+    'tws_source':            'early_optin_embed',
+    'tws_due_date':          dueFmt,
+    'tws_window_opens_date': winDate,
+    'tws_week_at_signup':    weeksNow,
+    'tws_quiz_status':       'early',
+    'tws_quiz_package':      'whiteGlove',
+    'tws_result_url':        SERVICE_URLS[state.service] || SERVICE_URLS.maternity,
+  };
+}
+
+function buildSeniorProps() {
+  const gy          = state.gradYear || 'spring2028';
+  const yearNum     = parseInt(gy.replace('spring','').replace('fall',''), 10);
+  const season      = gy.startsWith('spring') ? 'Spring' : 'Fall';
+  const gradLabel   = season + ' ' + yearNum;
+  const sessionYr   = yearNum - 1;
+  return {
+    '$phone_number_region': 'US',
+    '$source':              'senior_waitlist_embed',
+    'tws_source':           'senior_waitlist_embed',
+    'tws_senior_waitlist':  true,
+    'tws_grad_year':        gy,
+    'tws_grad_label':       gradLabel,
+    'tws_session_summer':   'Summer ' + sessionYr,
+    'tws_outreach_window':  'winter/spring ' + sessionYr,
+    'tws_outreach_date':    sessionYr + '-04-01T00:00:00',
+    'tws_quiz_package':     'whiteglove',
+    'tws_result_url':       SERVICE_URLS.senior,
+  };
+}
+
+function buildUniversalProps() {
+  const svc = state.service || 'family';
+  return {
+    '$phone_number_region': 'US',
+    '$source':              'qualifier_embed',
+    'tws_source':           'qualifier_embed',
+    'tws_service':          svc,
+    'tws_quiz_package':     'whiteGlove',
+    'tws_result_url':       SERVICE_URLS[svc] || SERVICE_URLS.family,
+  };
+}
+
+// Core Klaviyo submit — shared by all paths
+async function submitToKlaviyo(listId, properties, statusEl, successMsg) {
+  const name  = state.name  || '';
+  const email = state.email || '';
   if (!name || !email) {
-    statusEl.style.color = 'var(--error)';
-    statusEl.textContent = 'Something went wrong — please email us directly.';
+    if (statusEl) { statusEl.style.color = 'var(--error)'; statusEl.textContent = 'Something went wrong — please email us directly.'; }
     return;
   }
-
-  statusEl.style.color = 'var(--text2)';
-  statusEl.textContent = 'Saving your spot…';
-
-  const parts     = name.split(' ');
+  if (statusEl) { statusEl.style.color = 'var(--text2)'; statusEl.textContent = 'Saving your spot…'; }
+  const parts = name.split(' ');
   const firstName = parts[0];
   const lastName  = parts.slice(1).join(' ');
-  const dueDate   = state.dueDate || '';
-  const winDate   = state.klavWindowOpens || '';
-
   try {
-    // 1. Create/update profile with custom properties
-    await fetch(`https://a.klaviyo.com/client/profiles/?company_id=${KLAV_PUBLIC}`, {
+    await fetch('https://a.klaviyo.com/client/profiles/?company_id=' + KLAV_PUBLIC, {
       method: 'POST',
       headers: { 'content-type': 'application/json', revision: '2023-12-15' },
       body: JSON.stringify({ data: { type: 'profile', attributes: {
-        email, first_name: firstName, last_name: lastName,
-        properties: { tws_due_date: dueDate, tws_window_opens_date: winDate }
+        email, first_name: firstName, last_name: lastName, properties
       }}})
     });
-
-    // 2. Subscribe to list
-    const subRes = await fetch(`https://a.klaviyo.com/client/subscriptions/?company_id=${KLAV_PUBLIC}`, {
+    const subRes = await fetch('https://a.klaviyo.com/client/subscriptions/?company_id=' + KLAV_PUBLIC, {
       method: 'POST',
       headers: { 'content-type': 'application/json', revision: '2023-12-15' },
       body: JSON.stringify({ data: {
         type: 'subscription',
         attributes: { profile: { data: { type: 'profile', attributes: { email, first_name: firstName, last_name: lastName }}}},
-        relationships: { list: { data: { type: 'list', id: KLAV_LIST }}}
+        relationships: { list: { data: { type: 'list', id: listId }}}
       }})
     });
-
     if (subRes.status === 202 || subRes.ok) {
-      statusEl.style.color = 'var(--gold)';
-      statusEl.textContent = '✓ You\'re on the list. We\'ll be in touch right around your anatomy scan.';
-    } else {
-      throw new Error('status ' + subRes.status);
-    }
+      if (statusEl) { statusEl.style.color = 'var(--gold)'; statusEl.textContent = successMsg || '✓ You\'re on the list.'; }
+    } else { throw new Error('status ' + subRes.status); }
   } catch (err) {
-    statusEl.style.color = 'var(--error)';
-    statusEl.textContent = 'Something didn\'t save — please email us directly or text us and we\'ll get you sorted.';
+    if (statusEl) { statusEl.style.color = 'var(--error)'; statusEl.textContent = 'Something didn\'t save — please email us directly.'; }
   }
+}
+
+// Early maternity path (called from renderKlavCapture)
+async function submitKlaviyo() {
+  const statusEl = document.getElementById('klav-status');
+  await submitToKlaviyo(KLAV_LIST_MATERNITY, buildMaternityProps(), statusEl,
+    '✓ You\'re on the list. We\'ll be in touch right around your anatomy scan.');
+}
+
+// ── Senior waitlist Klaviyo screen ───────────────────────────────────
+function renderKlavSenior(content) {
+  document.getElementById('progressShell').style.display = 'none';
+  document.getElementById('bottomNav').style.display     = 'none';
+
+  const props   = buildSeniorProps();
+  const session = props.tws_session_summer;   // "Summer 2027"
+  const window_ = props.tws_outreach_window;  // "winter/spring 2027"
+
+  content.innerHTML = `
+    <div class="klav-screen">
+      <p class="result-eyebrow">You\'re on the waitlist</p>
+      <h2 class="klav-headline">We\'ve got your grad year. <em>We\'ll reach out when it\'s time.</em></h2>
+      <p class="klav-body">We\'ll be in touch <strong>${window_}</strong> — right when we start booking ${session} sessions. You\'ll be first in line.</p>
+      <div id="klav-status" style="font-size:13px;color:var(--text2);margin-bottom:20px">Saving your spot…</div>
+      <div class="inquire-bar">
+        <span class="inquire-or">Can\'t wait? Reach us directly</span>
+        <div class="inquire-links">
+          <a href="${SMS_HREF}" class="contact-link contact-link-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Text (248) 274-6361
+          </a>
+          <a href="${EMAIL_HREF}" class="contact-link contact-link-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Email Us
+          </a>
+        </div>
+      </div>
+    </div>`;
+
+  submitToKlaviyo(KLAV_LIST_SENIOR, props, document.getElementById('klav-status'),
+    '✓ You\'re on the waitlist. We\'ll be in touch ' + window_ + '.');
+}
+
+// ── Universal Klaviyo screen — later/flexible timing ─────────────────
+function renderKlavUniversal(content) {
+  document.getElementById('progressShell').style.display = 'none';
+  document.getElementById('bottomNav').style.display     = 'none';
+
+  content.innerHTML = `
+    <div class="klav-screen">
+      <p class="result-eyebrow">We\'d love to connect</p>
+      <h2 class="klav-headline">We\'ll reach out when <em>our calendar opens.</em></h2>
+      <p class="klav-body">We\'re booked through the end of the year, but we\'d love to hold a spot for you. We\'ll follow up as soon as availability opens.</p>
+      <div id="klav-status" style="font-size:13px;color:var(--text2);margin-bottom:20px">Saving your spot…</div>
+      <div class="inquire-bar">
+        <span class="inquire-or">Prefer to reach us directly?</span>
+        <div class="inquire-links">
+          <a href="${SMS_HREF}" class="contact-link contact-link-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Text (248) 274-6361
+          </a>
+          <a href="${EMAIL_HREF}" class="contact-link contact-link-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Email Us
+          </a>
+        </div>
+      </div>
+    </div>`;
+
+  submitToKlaviyo(KLAV_LIST_UNIVERSAL, buildUniversalProps(), document.getElementById('klav-status'),
+    '✓ You\'re on the list. We\'ll be in touch when our calendar opens.');
 }
 
 // =====================================================================
@@ -1410,6 +1722,8 @@ async function submitKlaviyo() {
 // =====================================================================
 function selectOpt(id, value, el) {
   state[id] = value;
+  // Mirror gradyear step value into state.gradYear
+  if (id === 'gradyear') state.gradYear = value;
   document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
   el.classList.add('selected');
   document.getElementById('btnNext').disabled = false;
@@ -1442,9 +1756,11 @@ function goNext() {
     const name  = (document.getElementById('cName')  || {}).value?.trim() || '';
     const email = (document.getElementById('cEmail') || {}).value?.trim() || '';
     if (!name || !email) return;
-    state.name  = name;
-    state.email = email;
-    state.phone = (document.getElementById('cPhone') || {}).value?.trim() || '';
+    state.firstName = (document.getElementById('cFirstName') || {}).value?.trim() || '';
+    state.lastName  = (document.getElementById('cLastName')  || {}).value?.trim() || '';
+    state.name      = (state.firstName + ' ' + state.lastName).trim();
+    state.email     = email;
+    state.phone     = (document.getElementById('cPhone') || {}).value?.trim() || '';
 
     // If early maternity, go to Klaviyo result
     if (state.dueDateValid === 'tooEarly') { currentStep = STEPS.length; render(); return; }
