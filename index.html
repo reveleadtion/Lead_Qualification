@@ -256,6 +256,33 @@ textarea.text-field {
   min-height: 90px;
   line-height: 1.55;
 }
+/* Fork — now/later selection */
+.fork-row { margin: 4px 0 2px; }
+.fork-label {
+  display: block;
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--text2); margin-bottom: 8px;
+}
+.fork-options { display: flex; gap: 8px; }
+.fork-btn {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 11px 10px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px; font-weight: 400;
+  color: var(--text2);
+  cursor: pointer; transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.fork-btn:hover { border-color: var(--gold-bdr); color: var(--text); }
+.fork-btn.selected {
+  background: var(--text); color: #F5F3EF;
+  border-color: var(--text);
+  font-weight: 500;
+}
+
 /* Sprout native form — hidden now */
 .sprout-wrapper { display: none; }
 /* Custom Sprout submission form */
@@ -751,13 +778,7 @@ const STEPS = [
       { value: 'no',    label: "That\'s outside my budget right now", sub: null },
     ]
   },
-  { id: 'contact', type: 'contact', label: "Almost there.",
-    hint: "We\'ll follow up within one business day.",
-    // Show contact for all qualified paths — tooEarly goes here too (routes to Klaviyo after)
-    // Skip only when budget declined, experience panel chosen, or timing truly unqualified
-    showIf: () => state.budget !== 'no' && state.budget !== 'learn'
-                  && state.dueDateValid !== 'unqualified'
-  },
+  // Contact step removed — fields collected on final result screen
 ];
 
 function activeSteps() {
@@ -977,9 +998,8 @@ function render() {
 }
 
 function needsSelection(step) {
-  if (step.type === 'options')  return !state[step.id];
-  if (step.type === 'duedate')  return !state.dueDate;
-  if (step.type === 'contact')  return true; // will enable via oninput
+  if (step.type === 'options') return !state[step.id];
+  if (step.type === 'duedate') return !state.dueDate;
   return false;
 }
 
@@ -1094,19 +1114,38 @@ function checkContact() {
 //  RESULT RENDERERS
 // =====================================================================
 
-// ── Qualified + Sprout custom form ──────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+//  UNIFIED RESULT FORM — used by all qualified paths
+//  Collects: first, last, email, phone, session, notes, contact_timing
+//  contact_timing fork: "now" → Sprout, "later" → Klaviyo (except
+//  maternity/newborn/senior 2028+ which have fixed routing)
+// ═══════════════════════════════════════════════════════════════════
+
 const SERVICE_LABELS = {
-  maternity: 'Maternity Session',
-  boudoir:   'Boudoir Maternity Session',
-  newborn:   'Newborn Session',
-  senior:    'Senior Portraits',
-  family:    'Family Session',
-  branding:  'Branding / Headshots',
-  beauty:    'Beauty / Other',
+  maternity: 'Maternity',
+  boudoir:   'Maternity',
+  newborn:   'Newborn',
+  senior:    'Senior's',
+  family:    'Family',
+  branding:  'Headshots/Branding',
+  beauty:    'Beauty / Milestone',
 };
 
-function buildQualifiedNote() {
-  // Auto-fill additional context into notes for Sprout
+// Returns true for services where timing is already determined by the form
+// — these skip the now/later fork and always route to their fixed destination
+function hasFixedRouting() {
+  const svc = state.service;
+  // Maternity tooEarly → Klaviyo always
+  if ((svc === 'maternity' || svc === 'boudoir') && state.dueDateValid === 'tooEarly') return true;
+  // Senior 2028+ → Klaviyo always
+  if (svc === 'senior' && state.timing === 'later' &&
+      parseInt((state.gradYear || '').replace('spring','').replace('fall',''), 10) >= 2028) return true;
+  // Newborn good → Sprout always
+  if (svc === 'newborn') return true;
+  return false;
+}
+
+function buildAutoNote() {
   const parts = [];
   if (state.dueDate) {
     const d = new Date(state.dueDate + 'T12:00:00');
@@ -1116,139 +1155,221 @@ function buildQualifiedNote() {
     const map = { aug: 'August', sep: 'September', oct: 'October' };
     parts.push('Preferred timing: ' + (map[state.timing] || state.timing));
   }
-  if (state.gradYear) parts.push('Grad year: ' + state.gradYear.replace('spring','Spring ').replace('fall','Fall '));
+  if (state.gradYear) {
+    parts.push('Grad year: ' + state.gradYear.replace('spring','Spring ').replace('fall','Fall '));
+  }
   parts.push('Source: qualifier form');
   return parts.join(' | ');
 }
 
-function renderQualified(content) {
-  const service = state.service;
-  const timing  = state.timing;
+// Determines fixed headline/subtext based on service + timing
+function getResultCopy() {
+  const svc    = state.service;
+  const timing = state.timing;
+  const dv     = state.dueDateValid;
   const spotMap = { aug: SPOTS.aug + ' spots remaining in August', sep: SPOTS.sep + ' spots remaining in September', oct: SPOTS.oct + ' spots remaining in October' };
 
-  let bodyText = '', spotText = '';
-  if (['maternity','boudoir'].includes(service)) {
-    bodyText = 'Based on your due date, the timing works beautifully. We have limited sessions available from August through October — fill out the form below and we\'ll be in touch within one business day to confirm your spot.';
-  } else if (service === 'newborn') {
-    bodyText = 'Your timing is perfect. Fill out the form below and we\'ll reach out right away to confirm your newborn session.';
-  } else if (timing) {
-    spotText = spotMap[timing] || '';
-    bodyText = spotText
-      ? 'We have <strong>' + spotText + '</strong>. Fill out the form below and we\'ll be in touch within one business day.'
-      : 'We\'d love to connect. Fill out the short form below and we\'ll be in touch.';
+  if (svc === 'newborn') {
+    return { eyebrow: 'Reserve Your Session', headline: 'Your timing is perfect.', body: 'Fill in your details below and we\'ll reach out right away to confirm your newborn session.', spot: '' };
   }
+  if ((svc === 'maternity' || svc === 'boudoir') && dv === 'tooEarly') {
+    return { eyebrow: 'Your Spot Is Reserved', headline: 'We\'ll reach out when your window opens.', body: 'Your ideal session timing opens near your anatomy scan. We\'ll be in touch at exactly the right time.', spot: '' };
+  }
+  if ((svc === 'maternity' || svc === 'boudoir') && dv === 'good') {
+    return { eyebrow: 'Reserve Your Session', headline: 'We\'d love to work with you.', body: 'Based on your due date, the timing works beautifully. Fill in your details below.', spot: '' };
+  }
+  if (svc === 'senior' && state.timing === 'later') {
+    return { eyebrow: 'You\'re on the Waitlist', headline: 'We\'ll reach out when it\'s time.', body: 'We\'ll be in touch when we start booking your session year — you\'ll be first in line.', spot: '' };
+  }
+  const spot = timing ? (spotMap[timing] || '') : '';
+  const body = spot ? 'We have <strong>' + spot + '</strong>. Fill in your details below and we\'ll be in touch within one business day.' : 'We\'d love to connect. Fill in your details below and we\'ll be in touch.';
+  return { eyebrow: 'Reserve Your Session', headline: 'We\'d love to work with you.', body, spot };
+}
+
+// The unified form — called by all qualified result paths
+function renderUnifiedForm(el) {
+  document.getElementById('progressShell').style.display = 'none';
+  document.getElementById('bottomNav').style.display     = 'none';
+
+  const copy     = getResultCopy();
+  const fixed    = hasFixedRouting();
+  const svc      = state.service;
+  const autoNote = buildAutoNote();
 
   const svcOptions = Object.entries(SERVICE_LABELS).map(([v, l]) =>
-    '<option value="' + v + '"' + (v === service ? ' selected' : '') + '>' + l + '</option>'
+    '<option value="' + v + '"' + (v === svc ? ' selected' : '') + '>' + l + '</option>'
   ).join('');
 
-  const noteDefault = buildQualifiedNote();
+  // now/later fork — only shown for services without fixed routing
+  const forkHtml = fixed ? '' : `
+    <div class="fork-row">
+      <span class="fork-label">When would you like us to reach out?</span>
+      <div class="fork-options">
+        <button class="fork-btn selected" id="fork-now"   onclick="selectFork('now')"  type="button">I'm ready now</button>
+        <button class="fork-btn"          id="fork-later" onclick="selectFork('later')" type="button">Later / Just exploring</button>
+      </div>
+    </div>`;
 
-  content.innerHTML = `
+  el.innerHTML = `
     <div class="qualified-screen">
-      <p class="result-eyebrow">Reserve Your Session</p>
-      <h2 class="qualified-headline">We\'d love to work<br>with you.</h2>
-      <p class="qualified-sub">${bodyText}</p>
-      ${spotText ? '<span class="spots-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>' + spotText + '</span>' : ''}
+      <p class="result-eyebrow">\${copy.eyebrow}</p>
+      <h2 class="qualified-headline">\${copy.headline}</h2>
+      <p class="qualified-sub">\${copy.body}</p>
+      \${copy.spot ? '<span class="spots-badge"><svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 8v4l3 3\"/></svg>' + copy.spot + '</span>' : ''}
 
-      <div class="sprout-form" id="sproutForm">
+      <div class="sprout-form" id="unifiedForm">
         <div class="sprout-form-row">
-          <input type="text"  class="text-field" id="sf-first" placeholder="First name"
-            value="${state.firstName || ''}" oninput="checkSproutForm()" style="margin-bottom:0">
-          <input type="text"  class="text-field" id="sf-last"  placeholder="Last name"
-            value="${state.lastName  || ''}" oninput="checkSproutForm()" style="margin-bottom:0">
+          <input type="text"  class="text-field" id="uf-first" placeholder="First name"
+            oninput="checkUnifiedForm()" style="margin-bottom:0">
+          <input type="text"  class="text-field" id="uf-last"  placeholder="Last name"
+            oninput="checkUnifiedForm()" style="margin-bottom:0">
         </div>
-        <input type="email" class="text-field" id="sf-email" placeholder="Email address"
-          value="${state.email || ''}" oninput="checkSproutForm()">
-        <input type="tel"   class="text-field" id="sf-phone" placeholder="Phone number"
-          value="${state.phone || ''}" oninput="checkSproutForm()">
-        <select class="text-field" id="sf-session" onchange="checkSproutForm()">
+        <input type="email" class="text-field" id="uf-email" placeholder="Email address"
+          oninput="checkUnifiedForm()">
+        <input type="tel"   class="text-field" id="uf-phone" placeholder="Phone number"
+          oninput="checkUnifiedForm()">
+        <select class="text-field" id="uf-session" onchange="checkUnifiedForm()">
           <option value="" disabled>Session type</option>
-          ${svcOptions}
+          \${svcOptions}
         </select>
-        <textarea class="text-field" id="sf-notes" placeholder="Tell us a little about what you\'re envisioning…"
-          oninput="checkSproutForm()">${noteDefault}</textarea>
-        <button class="sprout-submit" id="sproutSubmitBtn" onclick="submitSprout()" disabled>
+        <textarea class="text-field" id="uf-notes" placeholder="Tell us a little about what you're envisioning…"
+          oninput="checkUnifiedForm()">\${autoNote}</textarea>
+        \${forkHtml}
+        <button class="sprout-submit" id="unifiedSubmitBtn" onclick="submitUnified()" disabled>
           Reserve Your Session &#8594;
         </button>
-        <div id="sprout-status"></div>
+        <div id="unified-status"></div>
       </div>
 
       <div class="inquire-bar" style="margin-top:20px">
         <span class="inquire-or">Prefer to reach us directly</span>
         <div class="inquire-links">
-          <a href="${SMS_HREF}" class="contact-link contact-link-outline">
+          <a href="\${SMS_HREF}" class="contact-link contact-link-outline">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             Text (248) 274-6361
           </a>
-          <a href="${EMAIL_HREF}" class="contact-link contact-link-outline">
+          <a href="\${EMAIL_HREF}" class="contact-link contact-link-outline">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
             Email Us
           </a>
         </div>
       </div>
     </div>`;
-
-  // Enable button if state already has valid data
-  checkSproutForm();
 }
 
-function checkSproutForm() {
-  const first   = (document.getElementById('sf-first')   || {}).value?.trim() || '';
-  const email   = (document.getElementById('sf-email')   || {}).value?.trim() || '';
-  const phone   = (document.getElementById('sf-phone')   || {}).value?.trim() || '';
-  const session = (document.getElementById('sf-session') || {}).value || '';
-  const valid   = first.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-                  && phone.length > 6 && session !== '';
-  const btn = document.getElementById('sproutSubmitBtn');
+// Fork selection — now / later
+let forkChoice = 'now';
+function selectFork(val) {
+  forkChoice = val;
+  const btnNow   = document.getElementById('fork-now');
+  const btnLater = document.getElementById('fork-later');
+  if (btnNow)   btnNow.classList.toggle('selected',   val === 'now');
+  if (btnLater) btnLater.classList.toggle('selected', val === 'later');
+  // Update submit button label
+  const submit = document.getElementById('unifiedSubmitBtn');
+  if (submit) submit.textContent = val === 'later' ? 'Keep Me Posted \u2192' : 'Reserve Your Session \u2192';
+}
+
+function checkUnifiedForm() {
+  const first   = (document.getElementById('uf-first')   || {}).value?.trim() || '';
+  const email   = (document.getElementById('uf-email')   || {}).value?.trim() || '';
+  const phone   = (document.getElementById('uf-phone')   || {}).value?.trim() || '';
+  const session = (document.getElementById('uf-session') || {}).value || '';
+  const valid   = first.length > 0 && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)
+                  && phone.replace(/\\D/g,'').length >= 7 && session !== '';
+  const btn = document.getElementById('unifiedSubmitBtn');
   if (btn) btn.disabled = !valid;
 }
 
-async function submitSprout() {
-  const btn     = document.getElementById('sproutSubmitBtn');
-  const statusEl = document.getElementById('sprout-status');
+async function submitUnified() {
+  const btn      = document.getElementById('unifiedSubmitBtn');
+  const statusEl = document.getElementById('unified-status');
   if (btn) btn.disabled = true;
-  statusEl.className = '';
-  statusEl.textContent = 'Sending\u2026';
+  if (statusEl) { statusEl.className = ''; statusEl.textContent = 'Saving\u2026'; }
 
-  const first   = document.getElementById('sf-first').value.trim();
-  const last    = document.getElementById('sf-last').value.trim();
-  const email   = document.getElementById('sf-email').value.trim();
-  const phone   = document.getElementById('sf-phone').value.trim();
-  const session = document.getElementById('sf-session').value;
-  const notes   = document.getElementById('sf-notes').value.trim();
+  const first   = document.getElementById('uf-first').value.trim();
+  const last    = document.getElementById('uf-last').value.trim();
+  const email   = document.getElementById('uf-email').value.trim();
+  const phone   = document.getElementById('uf-phone').value.trim();
+  const session = document.getElementById('uf-session').value;
+  const notes   = document.getElementById('uf-notes').value.trim();
+
+  // Save to state so Klaviyo property builders can use them
+  state.firstName = first;
+  state.lastName  = last;
+  state.name      = (first + ' ' + last).trim();
+  state.email     = email;
+  state.phone     = phone;
+
   const sessionLabel = SERVICE_LABELS[session] || session;
+  const svc          = state.service;
+  const dv           = state.dueDateValid;
+
+  // Determine routing:
+  // 1. Fixed routing services (maternity tooEarly, senior 2028+, newborn) ignore fork
+  // 2. Everyone else: fork choice drives Sprout (now) vs Klaviyo Universal (later)
+  let dest = 'sprout';
+
+  if ((svc === 'maternity' || svc === 'boudoir') && dv === 'tooEarly') {
+    dest = 'klaviyo_maternity';
+  } else if (svc === 'senior' && state.timing === 'later' &&
+             parseInt((state.gradYear || '').replace('spring','').replace('fall',''), 10) >= 2028) {
+    dest = 'klaviyo_senior';
+  } else if (!hasFixedRouting() && forkChoice === 'later') {
+    dest = 'klaviyo_universal';
+  }
 
   try {
-    const res = await fetch('/api/sprout', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ first, last, email, phone, session: sessionLabel, notes })
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (res.ok && data.success !== false) {
-            // Swap form for success screen
-      const form = document.getElementById('sproutForm');
-      if (form) {
-        const div = document.createElement('div');
-        div.className = 'success-screen';
-        div.innerHTML = '<span class="success-icon">✨</span>'
-          + '<h2 class="success-headline">You\'re all set.<br><em>We\'ll be in touch soon.</em></h2>'
-          + '<p class="success-body">We received your request and will follow up within one business day to confirm everything. We can\'t wait to work with you.</p>';
-        form.parentNode.replaceChild(div, form);
-      }
+    if (dest === 'sprout') {
+      await doSproutSubmit(first, last, email, phone, sessionLabel, notes, statusEl);
+    } else if (dest === 'klaviyo_maternity') {
+      await submitToKlaviyo(KLAV_LIST_MATERNITY, buildMaternityProps(), statusEl,
+        "\u2713 You're on the list. We'll be in touch around your anatomy scan.");
+    } else if (dest === 'klaviyo_senior') {
+      await submitToKlaviyo(KLAV_LIST_SENIOR, buildSeniorProps(), statusEl,
+        "\u2713 You're on the waitlist. We'll reach out when we start booking your session year.");
     } else {
-      throw new Error(data.error || 'Submission failed');
+      const props = { ...buildUniversalProps(), tws_notes: notes, tws_session_type: sessionLabel };
+      await submitToKlaviyo(KLAV_LIST_UNIVERSAL, props, statusEl,
+        "\u2713 You're on our list. We'll reach out when availability opens.");
     }
   } catch (err) {
-    statusEl.className = 'error';
-    statusEl.textContent = 'Something didn\'t go through — please text or email us directly.';
+    if (statusEl) { statusEl.className = 'error'; statusEl.textContent = "Something didn't go through — please text or email us directly."; }
     if (btn) btn.disabled = false;
   }
 }
 
+async function doSproutSubmit(first, last, email, phone, session, notes, statusEl) {
+  const res = await fetch('/api/sprout', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ first, last, email, phone, session, notes })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Sprout error');
+
+  // Success — replace form with confirmation
+  const form = document.getElementById('unifiedForm');
+  if (form) {
+    const div = document.createElement('div');
+    div.className = 'success-screen';
+    div.innerHTML = '<span class="success-icon">\u2728</span>'
+      + "<h2 class=\"success-headline\">You're all set.<br><em>We'll be in touch soon.</em></h2>"
+      + "<p class=\"success-body\">We received your request and will follow up within one business day to confirm everything. We can't wait to work with you.</p>";
+    form.parentNode.replaceChild(div, form);
+  }
+  if (statusEl) statusEl.textContent = '';
+}
+
+// Keep old function names as aliases so Klaviyo result screens still work
+function renderQualified(content)     { renderUnifiedForm(content); }
+function renderKlavCapture(content)   { renderUnifiedForm(content); }
+function renderKlavSenior(content)    { renderUnifiedForm(content); }
+function renderKlavUniversal(content) { renderUnifiedForm(content); }
+
+// Legacy — kept for safety, no longer the primary path
+function checkSproutForm()  { checkUnifiedForm(); }
+function submitSprout()     { submitUnified(); }
 
 // ── Experience / Offer panel ─────────────────────────────────────────
 function renderExperience(content) {
@@ -1751,22 +1872,7 @@ function goNext() {
     // 'good' and 'tooEarly' fall through to next active step (budget)
   }
 
-  // Contact step: validate + save
-  if (step && step.type === 'contact') {
-    const name  = (document.getElementById('cName')  || {}).value?.trim() || '';
-    const email = (document.getElementById('cEmail') || {}).value?.trim() || '';
-    if (!name || !email) return;
-    state.firstName = (document.getElementById('cFirstName') || {}).value?.trim() || '';
-    state.lastName  = (document.getElementById('cLastName')  || {}).value?.trim() || '';
-    state.name      = (state.firstName + ' ' + state.lastName).trim();
-    state.email     = email;
-    state.phone     = (document.getElementById('cPhone') || {}).value?.trim() || '';
-
-    // If early maternity, go to Klaviyo result
-    if (state.dueDateValid === 'tooEarly') { currentStep = STEPS.length; render(); return; }
-    currentStep = STEPS.length; render(); return;
-  }
-
+  // No separate contact step — all fields on result screen
   // Budget routing
   if (step && step.type === 'options' && step.id === 'budget') {
     if (state.budget === 'no' || state.budget === 'learn') {
