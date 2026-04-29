@@ -1242,7 +1242,8 @@ function renderUnifiedForm(el) {
     '<option value="" disabled>Session type</option>' +
     svcOptions +
     '</select>' +
-    '<textarea class="text-field" id="uf-notes" placeholder="Tell us a little about what you\'re envisioning\u2026" oninput="checkUnifiedForm()">' + autoNote + '</textarea>' +
+    '<input type="hidden" id="uf-meta" value="' + encodeURIComponent(autoNote) + '">' +
+    '<textarea class="text-field" id="uf-notes" placeholder="Tell us a little about what you\'re envisioning\u2026" oninput="checkUnifiedForm()"></textarea>' +
     forkHtml +
     '<button class="sprout-submit" id="unifiedSubmitBtn" onclick="submitUnified()" disabled>Reserve Your Session \u2192</button>' +
     '<div id="unified-status"></div>' +
@@ -1253,11 +1254,11 @@ function renderUnifiedForm(el) {
     '<a href="' + SMS_HREF + '" class="contact-link contact-link-outline">' +
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
     'Text (248) 274-6361</a>' +
-    '<a href="' + EMAIL_HREF + '" class="contact-link contact-link-outline">' +
-    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>' +
-    'Email Us</a>' +
     '</div></div>' +
     '</div>';
+  // Trigger validation immediately — select is pre-populated so button
+  // should enable as soon as name + email + phone are filled
+  setTimeout(checkUnifiedForm, 0);
 }
 
 
@@ -1297,6 +1298,8 @@ async function submitUnified() {
   const phone   = document.getElementById('uf-phone').value.trim();
   const session = document.getElementById('uf-session').value;
   const notes   = document.getElementById('uf-notes').value.trim();
+  const meta    = decodeURIComponent((document.getElementById('uf-meta') || {}).value || '');
+  const fullNotes = notes + (meta ? (notes ? '\n\n' : '') + '--- ' + meta : '');
 
   // Save to state so Klaviyo property builders can use them
   state.firstName = first;
@@ -1325,7 +1328,7 @@ async function submitUnified() {
 
   try {
     if (dest === 'sprout') {
-      await doSproutSubmit(first, last, email, phone, sessionLabel, notes, statusEl);
+      await doSproutSubmit(first, last, email, phone, sessionLabel, fullNotes, statusEl);
     } else if (dest === 'klaviyo_maternity') {
       await submitToKlaviyo(KLAV_LIST_MATERNITY, buildMaternityProps(), statusEl,
         "\u2713 You're on the list. We'll be in touch around your anatomy scan.");
@@ -1333,7 +1336,7 @@ async function submitUnified() {
       await submitToKlaviyo(KLAV_LIST_SENIOR, buildSeniorProps(), statusEl,
         "\u2713 You're on the waitlist. We'll reach out when we start booking your session year.");
     } else {
-      const props = { ...buildUniversalProps(), tws_notes: notes, tws_session_type: sessionLabel };
+      const props = { ...buildUniversalProps(), tws_notes: fullNotes, tws_session_type: sessionLabel };
       await submitToKlaviyo(KLAV_LIST_UNIVERSAL, props, statusEl,
         "\u2713 You're on our list. We'll reach out when availability opens.");
     }
@@ -1479,19 +1482,27 @@ function populateOfferItems() {
 
 // ── Loop helper — switch to a suggested service and restart from budget
 function loopToService(newService) {
-  state.service      = newService;
-  state.dueDate      = null;
-  state.dueDateValid = null;
-  state.dueDateReason = null;
-  state.timing       = null;
-  state.budget       = null;
+  state.service         = newService;
+  state.dueDate         = null;
+  state.dueDateValid    = null;
+  state.dueDateReason   = null;
+  state.dueDateNote     = null;
+  state.klavWindowOpens = null;
+  state.timing          = null;
+  state.gradYear        = null;
+  state.budget          = null;
   state.cameFromExperience = false;
-  // Jump to budget step — they already know timing doesn\'t work for the
-  // original service, so we skip straight to pricing for the new one.
-  const budgetIdx = STEPS.findIndex(s => s.id === 'budget');
-  currentStep = budgetIdx;
+
+  // Pregnancy services need the due date question to qualify correctly
+  if (['maternity','boudoir','newborn'].includes(newService)) {
+    currentStep = STEPS.findIndex(s => s.id === 'duedate');
+  } else {
+    // Non-pregnancy: go to timing step
+    currentStep = STEPS.findIndex(s => s.id === 'timing');
+  }
   render();
 }
+
 
 // ── Maternity unmatch — offer Newborn + Family ────────────────────
 function renderMaternityUnmatch(content) {
@@ -1541,7 +1552,7 @@ function renderMaternityUnmatch(content) {
     </div>`;
 }
 
-// ── Newborn unmatch — offer Maternity + Family ────────────────────
+// ── Newborn unmatch — offer Maternity + Family + unified form capture ──
 function renderNewbornUnmatch(content) {
   document.getElementById('progressShell').style.display = 'none';
   document.getElementById('bottomNav').style.display     = 'none';
@@ -1592,12 +1603,22 @@ function renderNewbornUnmatch(content) {
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           Text Us &nbsp;${PHONE_DISPLAY}
         </a>
-        <a href="${EMAIL_HREF}" class="contact-link contact-link-outline">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-          Email Us
-        </a>
       </div>
     </div>`;
+
+  // Add the unified form below so they can still be captured
+  // even though newborn timing doesn't work right now
+  const formWrap = document.createElement('div');
+  formWrap.style.marginTop = '8px';
+  content.appendChild(formWrap);
+  // Route to Klaviyo Universal (later path) since newborn timing is out
+  const savedTiming   = state.timing;
+  const savedService  = state.service;
+  state.timing  = 'later';
+  state.service = 'newborn';
+  renderUnifiedForm(formWrap);
+  state.timing  = savedTiming;
+  state.service = savedService;
 }
 
 // ── Budget unmatch → timed redirect ──────────────────────────────
@@ -1660,10 +1681,7 @@ function renderKlavCapture(content) {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             Text (248) 274-6361
           </a>
-          <a href="mailto:jasmine@twowildsoulsphotography.com" class="contact-link contact-link-outline">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-            Email Us
-          </a>
+
         </div>
       </div>
     </div>`;
@@ -1800,10 +1818,6 @@ function renderKlavSenior(content) {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             Text (248) 274-6361
           </a>
-          <a href="${EMAIL_HREF}" class="contact-link contact-link-outline">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-            Email Us
-          </a>
         </div>
       </div>
     </div>`;
@@ -1829,10 +1843,6 @@ function renderKlavUniversal(content) {
           <a href="${SMS_HREF}" class="contact-link contact-link-primary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             Text (248) 274-6361
-          </a>
-          <a href="${EMAIL_HREF}" class="contact-link contact-link-outline">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-            Email Us
           </a>
         </div>
       </div>
