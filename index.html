@@ -1121,13 +1121,25 @@ function checkContact() {
 //  maternity/newborn/senior 2028+ which have fixed routing)
 // ═══════════════════════════════════════════════════════════════════
 
+// Values must match Sprout Studio session type labels exactly (Settings → Lead Forms)
 const SERVICE_LABELS = {
   maternity: 'Maternity',
   boudoir:   'Maternity',
   newborn:   'Newborn',
-  senior:    'Senior's',
+  senior:    "Senior's",
   family:    'Family',
   branding:  'Headshots/Branding',
+  beauty:    'Beauty / Milestone',
+};
+
+// Display labels for the form select (human-readable)
+const SERVICE_DISPLAY = {
+  maternity: 'Maternity Session',
+  boudoir:   'Boudoir Maternity Session',
+  newborn:   'Newborn Session',
+  senior:    'Senior Portraits',
+  family:    'Family Session',
+  branding:  'Branding / Headshots',
   beauty:    'Beauty / Milestone',
 };
 
@@ -1196,66 +1208,58 @@ function renderUnifiedForm(el) {
   const svc      = state.service;
   const autoNote = buildAutoNote();
 
-  const svcOptions = Object.entries(SERVICE_LABELS).map(([v, l]) =>
-    '<option value="' + v + '"' + (v === svc ? ' selected' : '') + '>' + l + '</option>'
-  ).join('');
+  const svcOptions = Object.entries(SERVICE_DISPLAY).map(function(pair) {
+    var v = pair[0], l = pair[1];
+    return '<option value="' + v + '"' + (v === svc ? ' selected' : '') + '>' + l + '</option>';
+  }).join('');
 
-  // now/later fork — only shown for services without fixed routing
-  const forkHtml = fixed ? '' : `
-    <div class="fork-row">
-      <span class="fork-label">When would you like us to reach out?</span>
-      <div class="fork-options">
-        <button class="fork-btn selected" id="fork-now"   onclick="selectFork('now')"  type="button">I'm ready now</button>
-        <button class="fork-btn"          id="fork-later" onclick="selectFork('later')" type="button">Later / Just exploring</button>
-      </div>
-    </div>`;
+  const spotBadge = copy.spot
+    ? '<span class="spots-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>' + copy.spot + '</span>'
+    : '';
 
-  el.innerHTML = `
-    <div class="qualified-screen">
-      <p class="result-eyebrow">\${copy.eyebrow}</p>
-      <h2 class="qualified-headline">\${copy.headline}</h2>
-      <p class="qualified-sub">\${copy.body}</p>
-      \${copy.spot ? '<span class="spots-badge"><svg width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 8v4l3 3\"/></svg>' + copy.spot + '</span>' : ''}
+  const forkHtml = fixed ? '' :
+    '<div class="fork-row">' +
+    '<span class="fork-label">When would you like us to reach out?</span>' +
+    '<div class="fork-options">' +
+    '<button class="fork-btn selected" id="fork-now"   onclick="selectFork(\'now\')"   type="button">I\'m ready now</button>' +
+    '<button class="fork-btn"          id="fork-later" onclick="selectFork(\'later\')" type="button">Later / Just exploring</button>' +
+    '</div></div>';
 
-      <div class="sprout-form" id="unifiedForm">
-        <div class="sprout-form-row">
-          <input type="text"  class="text-field" id="uf-first" placeholder="First name"
-            oninput="checkUnifiedForm()" style="margin-bottom:0">
-          <input type="text"  class="text-field" id="uf-last"  placeholder="Last name"
-            oninput="checkUnifiedForm()" style="margin-bottom:0">
-        </div>
-        <input type="email" class="text-field" id="uf-email" placeholder="Email address"
-          oninput="checkUnifiedForm()">
-        <input type="tel"   class="text-field" id="uf-phone" placeholder="Phone number"
-          oninput="checkUnifiedForm()">
-        <select class="text-field" id="uf-session" onchange="checkUnifiedForm()">
-          <option value="" disabled>Session type</option>
-          \${svcOptions}
-        </select>
-        <textarea class="text-field" id="uf-notes" placeholder="Tell us a little about what you're envisioning…"
-          oninput="checkUnifiedForm()">\${autoNote}</textarea>
-        \${forkHtml}
-        <button class="sprout-submit" id="unifiedSubmitBtn" onclick="submitUnified()" disabled>
-          Reserve Your Session &#8594;
-        </button>
-        <div id="unified-status"></div>
-      </div>
-
-      <div class="inquire-bar" style="margin-top:20px">
-        <span class="inquire-or">Prefer to reach us directly</span>
-        <div class="inquire-links">
-          <a href="\${SMS_HREF}" class="contact-link contact-link-outline">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            Text (248) 274-6361
-          </a>
-          <a href="\${EMAIL_HREF}" class="contact-link contact-link-outline">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-            Email Us
-          </a>
-        </div>
-      </div>
-    </div>`;
+  el.innerHTML =
+    '<div class="qualified-screen">' +
+    '<p class="result-eyebrow">' + copy.eyebrow + '</p>' +
+    '<h2 class="qualified-headline">' + copy.headline + '</h2>' +
+    '<p class="qualified-sub">' + copy.body + '</p>' +
+    spotBadge +
+    '<div class="sprout-form" id="unifiedForm">' +
+    '<div class="sprout-form-row">' +
+    '<input type="text"  class="text-field" id="uf-first" placeholder="First name"     oninput="checkUnifiedForm()" style="margin-bottom:0">' +
+    '<input type="text"  class="text-field" id="uf-last"  placeholder="Last name"      oninput="checkUnifiedForm()" style="margin-bottom:0">' +
+    '</div>' +
+    '<input type="email" class="text-field" id="uf-email" placeholder="Email address"  oninput="checkUnifiedForm()">' +
+    '<input type="tel"   class="text-field" id="uf-phone" placeholder="Phone number"   oninput="checkUnifiedForm()">' +
+    '<select class="text-field" id="uf-session" onchange="checkUnifiedForm()">' +
+    '<option value="" disabled>Session type</option>' +
+    svcOptions +
+    '</select>' +
+    '<textarea class="text-field" id="uf-notes" placeholder="Tell us a little about what you\'re envisioning\u2026" oninput="checkUnifiedForm()">' + autoNote + '</textarea>' +
+    forkHtml +
+    '<button class="sprout-submit" id="unifiedSubmitBtn" onclick="submitUnified()" disabled>Reserve Your Session \u2192</button>' +
+    '<div id="unified-status"></div>' +
+    '</div>' +
+    '<div class="inquire-bar" style="margin-top:20px">' +
+    '<span class="inquire-or">Prefer to reach us directly</span>' +
+    '<div class="inquire-links">' +
+    '<a href="' + SMS_HREF + '" class="contact-link contact-link-outline">' +
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+    'Text (248) 274-6361</a>' +
+    '<a href="' + EMAIL_HREF + '" class="contact-link contact-link-outline">' +
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>' +
+    'Email Us</a>' +
+    '</div></div>' +
+    '</div>';
 }
+
 
 // Fork selection — now / later
 let forkChoice = 'now';
@@ -1301,7 +1305,7 @@ async function submitUnified() {
   state.email     = email;
   state.phone     = phone;
 
-  const sessionLabel = SERVICE_LABELS[session] || session;
+  const sessionLabel = SERVICE_LABELS[session] || SERVICE_DISPLAY[session] || session;
   const svc          = state.service;
   const dv           = state.dueDateValid;
 
@@ -1936,7 +1940,16 @@ if (window.self !== window.top || new URLSearchParams(window.location.search).ha
 // =====================================================================
 //  INIT
 // =====================================================================
-render();
+try {
+  render();
+} catch(e) {
+  console.error('TWS Qualifier render error:', e);
+  document.getElementById('mainContent').innerHTML =
+    '<div style="padding:40px 20px;text-align:center;font-family:sans-serif;color:#6B6860">' +
+    '<p style="font-size:14px;margin-bottom:16px">Something went wrong loading the form.</p>' +
+    '<a href="sms:+12482746361" style="display:inline-block;background:#1A1A18;color:#fff;padding:12px 24px;border-radius:4px;text-decoration:none;font-size:13px;letter-spacing:0.1em;text-transform:uppercase">Text Us Instead</a>' +
+    '</div>';
+}
 </script>
 </body>
 </html>
