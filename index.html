@@ -1239,7 +1239,6 @@ function renderUnifiedForm(el) {
     '<input type="email" class="text-field" id="uf-email" placeholder="Email address"  oninput="checkUnifiedForm()">' +
     '<input type="tel"   class="text-field" id="uf-phone" placeholder="Phone number"   oninput="checkUnifiedForm()">' +
     '<select class="text-field" id="uf-session" onchange="checkUnifiedForm()">' +
-    '<option value="" disabled>Session type</option>' +
     svcOptions +
     '</select>' +
     '<input type="hidden" id="uf-meta" value="' + encodeURIComponent(autoNote) + '">' +
@@ -1276,16 +1275,16 @@ function selectFork(val) {
 }
 
 function checkUnifiedForm() {
-  const first   = (document.getElementById('uf-first')   || {}).value?.trim() || '';
-  const email   = (document.getElementById('uf-email')   || {}).value?.trim() || '';
-  const phone   = (document.getElementById('uf-phone')   || {}).value?.trim() || '';
-  const session = (document.getElementById('uf-session') || {}).value || '';
-  const valid   = first.length > 0 && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)
-                  && phone.replace(/\\D/g,'').length >= 7 && session !== '';
+  const first = (document.getElementById('uf-first') || {}).value?.trim() || '';
+  const email = (document.getElementById('uf-email') || {}).value?.trim() || '';
+  const phone = (document.getElementById('uf-phone') || {}).value?.trim() || '';
+  // Session always pre-filled — not required for button enablement
+  const valid = first.length > 0
+    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    && phone.replace(/\D/g, '').length >= 7;
   const btn = document.getElementById('unifiedSubmitBtn');
   if (btn) btn.disabled = !valid;
 }
-
 async function submitUnified() {
   const btn      = document.getElementById('unifiedSubmitBtn');
   const statusEl = document.getElementById('unified-status');
@@ -1556,70 +1555,62 @@ function renderMaternityUnmatch(content) {
 function renderNewbornUnmatch(content) {
   document.getElementById('progressShell').style.display = 'none';
   document.getElementById('bottomNav').style.display     = 'none';
-  content.innerHTML = `
-    <div class="result-screen">
-      <p class="result-eyebrow">Availability Notice</p>
-      <h2 class="result-headline">The timing isn\'t quite there — <em>but we\'d love to work with you.</em></h2>
-      <p class="result-body">We\'re currently only scheduling newborns arriving the last week of July. Here\'s what we can do for you right now.</p>
 
-      <div class="explore-section">
-        <span class="explore-label">Explore what\'s available for you</span>
-        <div class="explore-cards">
+  // Only show maternity card if they could still be in window (18-32 wks today)
+  let showMaternity = false;
+  if (state.dueDate) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const wks = weeksAlongOnDate(state.dueDate, today);
+    showMaternity = wks >= 18 && wks <= 32;
+  }
 
-          <button class="explore-card" onclick="loopToService('maternity')">
-            <span class="explore-card-label">Before baby arrives</span>
-            <span class="explore-card-title">Maternity Session</span>
-            <span class="explore-card-desc">If you\'re still in your window, a maternity session captures this season beautifully — designer gowns, guided, fully styled.</span>
-            <div class="perks-grid" style="margin:8px 0 0">
-              <span class="perk-chip highlight">Designer Maternity Gowns</span>
-              <span class="perk-chip highlight">Outdoor Available</span>
-              <span class="perk-chip">Hair &amp; Makeup</span>
-              <span class="perk-chip">Guided Posing</span>
-            </div>
-            <span class="explore-card-arrow">→</span>
-          </button>
+  const maternityCard = !showMaternity ? '' :
+    '<button class="explore-card" onclick="loopToService(\'maternity\')">' +
+    '<span class="explore-card-label">Before baby arrives</span>' +
+    '<span class="explore-card-title">Maternity Session</span>' +
+    '<span class="explore-card-desc">Capture your bump beautifully — designer gowns, outdoor locations, hair and makeup all included.</span>' +
+    '<div class="perks-grid" style="margin:8px 0 0">' +
+    '<span class="perk-chip highlight">Designer Maternity Gowns</span>' +
+    '<span class="perk-chip highlight">Outdoor Available</span>' +
+    '<span class="perk-chip">Hair &amp; Makeup</span>' +
+    '</div>' +
+    '<span class="explore-card-arrow">\u2192</span>' +
+    '</button>';
 
-          <button class="explore-card" onclick="loopToService('family')">
-            <span class="explore-card-label">Once baby is home</span>
-            <span class="explore-card-title">Family Session</span>
-            <span class="explore-card-desc">A family session with your newborn captures those early weeks just as beautifully — on your timeline, not ours.</span>
-            <div class="perks-grid" style="margin:8px 0 0">
-              <span class="perk-chip highlight">Outdoor Locations</span>
-              <span class="perk-chip">Newborn Welcome</span>
-              <span class="perk-chip">Hair &amp; Makeup</span>
-              <span class="perk-chip">Wardrobe Guidance</span>
-            </div>
-            <span class="explore-card-arrow">→</span>
-          </button>
-
-        </div>
-        <button class="btn-future-session" onclick="loopToService('newborn')">
-          Interested in a Future Newborn Session →
-        </button>
-      </div>
-
-      <div class="contact-links" style="margin-top:20px">
-        <a href="${SMS_HREF}" class="contact-link contact-link-primary">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          Text Us &nbsp;${PHONE_DISPLAY}
-        </a>
-      </div>
-    </div>`;
-
-  // Add the unified form below so they can still be captured
-  // even though newborn timing doesn't work right now
-  const formWrap = document.createElement('div');
-  formWrap.style.marginTop = '8px';
-  content.appendChild(formWrap);
-  // Route to Klaviyo Universal (later path) since newborn timing is out
-  const savedTiming   = state.timing;
-  const savedService  = state.service;
-  state.timing  = 'later';
-  state.service = 'newborn';
-  renderUnifiedForm(formWrap);
-  state.timing  = savedTiming;
-  state.service = savedService;
+  content.innerHTML =
+    '<div class="result-screen">' +
+    '<p class="result-eyebrow">Availability Notice</p>' +
+    '<h2 class="result-headline">The timing isn\'t quite right \u2014 <em>but we\'d love to connect.</em></h2>' +
+    '<p class="result-body">We\'re currently only scheduling newborn sessions for babies arriving the last week of July. Here\'s what we can do for you.</p>' +
+    '<div class="explore-section">' +
+    '<span class="explore-label">What\'s available for you</span>' +
+    '<div class="explore-cards">' +
+    maternityCard +
+    '<button class="explore-card" onclick="loopToService(\'family\')">' +
+    '<span class="explore-card-label">Your growing family</span>' +
+    '<span class="explore-card-title">Family Session</span>' +
+    '<span class="explore-card-desc">A family session captures everyone beautifully \u2014 on your timeline, fully guided, hair and makeup included.</span>' +
+    '<div class="perks-grid" style="margin:8px 0 0">' +
+    '<span class="perk-chip highlight">Outdoor Locations</span>' +
+    '<span class="perk-chip">Hair &amp; Makeup</span>' +
+    '<span class="perk-chip">Wardrobe Guidance</span>' +
+    '<span class="perk-chip">All Ages Welcome</span>' +
+    '</div>' +
+    '<span class="explore-card-arrow">\u2192</span>' +
+    '</button>' +
+    '</div>' +
+    '<button class="btn-future-session" onclick="loopToService(\'newborn\')">' +
+    'Interested in a Future Newborn Session \u2192' +
+    '</button>' +
+    '</div>' +
+    '<div class="contact-links" style="margin-top:20px">' +
+    '<a href="' + SMS_HREF + '" class="contact-link contact-link-primary">' +
+    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+    'Text Us \u00a0' + PHONE_DISPLAY +
+    '</a></div>' +
+    '</div>';
 }
+
 
 // ── Budget unmatch → timed redirect ──────────────────────────────
 function renderBudgetUnmatch(content) {
@@ -1661,196 +1652,8 @@ function renderBudgetUnmatch(content) {
 // By the time we reach here, the lead has already passed budget + contact steps.
 // state.name, state.email, state.dueDate, state.klavWindowOpens are all populated.
 // We auto-submit immediately rather than asking them to re-enter info.
-function renderKlavCapture(content) {
-  document.getElementById('progressShell').style.display = 'none';
-  document.getElementById('bottomNav').style.display     = 'none';
-
-  const winDate = state.klavWindowOpens || '';
-  const winFmt  = winDate ? formatDate(new Date(winDate + 'T12:00:00')) : 'the right time';
-
-  content.innerHTML = `
-    <div class="klav-screen">
-      <p class="result-eyebrow">Your spot is reserved</p>
-      <h2 class="klav-headline">We\'ll reach out when <em>your window opens.</em></h2>
-      <p class="klav-body">Your ideal session timing opens around <strong>${winFmt}</strong> — near your anatomy scan. We\'ve noted your details and will be in touch at exactly the right time with everything you need to plan your session.</p>
-      <div id="klav-status" style="font-size:13px;color:var(--text2);margin-bottom:20px">Saving your spot…</div>
-      <div class="inquire-bar">
-        <span class="inquire-or">Can\'t wait? Reach us directly</span>
-        <div class="inquire-links">
-          <a href="sms:+12482746361" class="contact-link contact-link-primary">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            Text (248) 274-6361
-          </a>
-
-        </div>
-      </div>
-    </div>`;
-
-  // Auto-submit since we already have their info from the contact step
-  submitKlaviyo();
-}
-
-function checkKlav() {
-  // No-op — kept for safety, submitKlaviyo reads from state directly
-}
-
-// ── Klaviyo property builders ─────────────────────────────────────────
-
-function buildMaternityProps() {
-  const today   = new Date(); today.setHours(0,0,0,0);
-  const dueDate = state.dueDate || '';
-  const winDate = state.klavWindowOpens || '';
-  const dueFmt  = dueDate
-    ? new Date(dueDate + 'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})
-    : '';
-  const weeksNow = dueDate
-    ? Math.max(1, Math.round(40 - (new Date(dueDate+'T12:00:00') - today) / MS_WEEK))
-    : '';
-  return {
-    '$phone_number_region': 'US',
-    '$source':               'early_optin_embed',
-    'tws_source':            'early_optin_embed',
-    'tws_due_date':          dueFmt,
-    'tws_window_opens_date': winDate,
-    'tws_week_at_signup':    weeksNow,
-    'tws_quiz_status':       'early',
-    'tws_quiz_package':      'whiteGlove',
-    'tws_result_url':        SERVICE_URLS[state.service] || SERVICE_URLS.maternity,
-  };
-}
-
-function buildSeniorProps() {
-  const gy          = state.gradYear || 'spring2028';
-  const yearNum     = parseInt(gy.replace('spring','').replace('fall',''), 10);
-  const season      = gy.startsWith('spring') ? 'Spring' : 'Fall';
-  const gradLabel   = season + ' ' + yearNum;
-  const sessionYr   = yearNum - 1;
-  return {
-    '$phone_number_region': 'US',
-    '$source':              'senior_waitlist_embed',
-    'tws_source':           'senior_waitlist_embed',
-    'tws_senior_waitlist':  true,
-    'tws_grad_year':        gy,
-    'tws_grad_label':       gradLabel,
-    'tws_session_summer':   'Summer ' + sessionYr,
-    'tws_outreach_window':  'winter/spring ' + sessionYr,
-    'tws_outreach_date':    sessionYr + '-04-01T00:00:00',
-    'tws_quiz_package':     'whiteglove',
-    'tws_result_url':       SERVICE_URLS.senior,
-  };
-}
-
-function buildUniversalProps() {
-  const svc = state.service || 'family';
-  return {
-    '$phone_number_region': 'US',
-    '$source':              'qualifier_embed',
-    'tws_source':           'qualifier_embed',
-    'tws_service':          svc,
-    'tws_quiz_package':     'whiteGlove',
-    'tws_result_url':       SERVICE_URLS[svc] || SERVICE_URLS.family,
-  };
-}
-
-// Core Klaviyo submit — shared by all paths
-async function submitToKlaviyo(listId, properties, statusEl, successMsg) {
-  const name  = state.name  || '';
-  const email = state.email || '';
-  if (!name || !email) {
-    if (statusEl) { statusEl.style.color = 'var(--error)'; statusEl.textContent = 'Something went wrong — please email us directly.'; }
-    return;
-  }
-  if (statusEl) { statusEl.style.color = 'var(--text2)'; statusEl.textContent = 'Saving your spot…'; }
-  const parts = name.split(' ');
-  const firstName = parts[0];
-  const lastName  = parts.slice(1).join(' ');
-  try {
-    await fetch('https://a.klaviyo.com/client/profiles/?company_id=' + KLAV_PUBLIC, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', revision: '2023-12-15' },
-      body: JSON.stringify({ data: { type: 'profile', attributes: {
-        email, first_name: firstName, last_name: lastName, properties
-      }}})
-    });
-    const subRes = await fetch('https://a.klaviyo.com/client/subscriptions/?company_id=' + KLAV_PUBLIC, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', revision: '2023-12-15' },
-      body: JSON.stringify({ data: {
-        type: 'subscription',
-        attributes: { profile: { data: { type: 'profile', attributes: { email, first_name: firstName, last_name: lastName }}}},
-        relationships: { list: { data: { type: 'list', id: listId }}}
-      }})
-    });
-    if (subRes.status === 202 || subRes.ok) {
-      if (statusEl) { statusEl.style.color = 'var(--gold)'; statusEl.textContent = successMsg || '✓ You\'re on the list.'; }
-    } else { throw new Error('status ' + subRes.status); }
-  } catch (err) {
-    if (statusEl) { statusEl.style.color = 'var(--error)'; statusEl.textContent = 'Something didn\'t save — please email us directly.'; }
-  }
-}
-
-// Early maternity path (called from renderKlavCapture)
-async function submitKlaviyo() {
-  const statusEl = document.getElementById('klav-status');
-  await submitToKlaviyo(KLAV_LIST_MATERNITY, buildMaternityProps(), statusEl,
-    '✓ You\'re on the list. We\'ll be in touch right around your anatomy scan.');
-}
-
-// ── Senior waitlist Klaviyo screen ───────────────────────────────────
-function renderKlavSenior(content) {
-  document.getElementById('progressShell').style.display = 'none';
-  document.getElementById('bottomNav').style.display     = 'none';
-
-  const props   = buildSeniorProps();
-  const session = props.tws_session_summer;   // "Summer 2027"
-  const window_ = props.tws_outreach_window;  // "winter/spring 2027"
-
-  content.innerHTML = `
-    <div class="klav-screen">
-      <p class="result-eyebrow">You\'re on the waitlist</p>
-      <h2 class="klav-headline">We\'ve got your grad year. <em>We\'ll reach out when it\'s time.</em></h2>
-      <p class="klav-body">We\'ll be in touch <strong>${window_}</strong> — right when we start booking ${session} sessions. You\'ll be first in line.</p>
-      <div id="klav-status" style="font-size:13px;color:var(--text2);margin-bottom:20px">Saving your spot…</div>
-      <div class="inquire-bar">
-        <span class="inquire-or">Can\'t wait? Reach us directly</span>
-        <div class="inquire-links">
-          <a href="${SMS_HREF}" class="contact-link contact-link-primary">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            Text (248) 274-6361
-          </a>
-        </div>
-      </div>
-    </div>`;
-
-  submitToKlaviyo(KLAV_LIST_SENIOR, props, document.getElementById('klav-status'),
-    '✓ You\'re on the waitlist. We\'ll be in touch ' + window_ + '.');
-}
-
-// ── Universal Klaviyo screen — later/flexible timing ─────────────────
-function renderKlavUniversal(content) {
-  document.getElementById('progressShell').style.display = 'none';
-  document.getElementById('bottomNav').style.display     = 'none';
-
-  content.innerHTML = `
-    <div class="klav-screen">
-      <p class="result-eyebrow">We\'d love to connect</p>
-      <h2 class="klav-headline">We\'ll reach out when <em>our calendar opens.</em></h2>
-      <p class="klav-body">We\'re booked through the end of the year, but we\'d love to hold a spot for you. We\'ll follow up as soon as availability opens.</p>
-      <div id="klav-status" style="font-size:13px;color:var(--text2);margin-bottom:20px">Saving your spot…</div>
-      <div class="inquire-bar">
-        <span class="inquire-or">Prefer to reach us directly?</span>
-        <div class="inquire-links">
-          <a href="${SMS_HREF}" class="contact-link contact-link-primary">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            Text (248) 274-6361
-          </a>
-        </div>
-      </div>
-    </div>`;
-
-  submitToKlaviyo(KLAV_LIST_UNIVERSAL, buildUniversalProps(), document.getElementById('klav-status'),
-    '✓ You\'re on the list. We\'ll be in touch when our calendar opens.');
-}
+// renderKlavCapture, renderKlavSenior, renderKlavUniversal are all
+// aliased to renderUnifiedForm above — unified form handles all paths.
 
 // =====================================================================
 //  NAVIGATION
