@@ -55,6 +55,10 @@ export default async function handler(req, res) {
   params.append('field-email',      email);
   params.append('label-phone',      'Phone Number');
   params.append('field-phone',      phone);
+  // 'type' sets the lead category in Sprout (the dropdown shown on the lead card)
+  // Must match Sprout's session type labels exactly (Settings → Lead Forms → Session Types)
+  params.append('type',             session);
+  // Also send as event_type field for the questionnaire detail view
   params.append('label-event_type', 'Session Type');
   params.append('field-event_type', session);
   params.append('label-remark',     'Additional Information');
