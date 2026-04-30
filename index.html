@@ -1337,7 +1337,7 @@ async function submitUnified() {
     } else {
       const props = { ...buildUniversalProps(), tws_notes: fullNotes, tws_session_type: sessionLabel };
       await submitToKlaviyo(KLAV_LIST_UNIVERSAL, props, statusEl,
-        "\u2713 You're on our list. We'll reach out when availability opens.");
+        "✓ You're on our list. We'll be in touch when the time is right.");
     }
   } catch (err) {
     if (statusEl) { statusEl.className = 'error'; statusEl.textContent = "Something didn't go through — please text or email us directly."; }
@@ -1357,17 +1357,11 @@ async function doSproutSubmit(first, last, email, phone, session, notes, statusE
     throw new Error(data.error || data.detail || ('Sprout error ' + res.status));
   }
 
-  // Success — replace form with confirmation
-  const form = document.getElementById('unifiedForm');
-  if (form) {
-    const div = document.createElement('div');
-    div.className = 'success-screen';
-    div.innerHTML = '<span class="success-icon">\u2728</span>'
-      + "<h2 class=\"success-headline\">You're all set.<br><em>We'll be in touch soon.</em></h2>"
-      + "<p class=\"success-body\">We received your request and will follow up within one business day to confirm everything. We can't wait to work with you.</p>";
-    form.parentNode.replaceChild(div, form);
-  }
-  if (statusEl) statusEl.textContent = '';
+  // Success — redirect to thank-you page
+  if (statusEl) statusEl.textContent = '\u2713 Sending you to our thank-you page\u2026';
+  setTimeout(function() {
+    window.location.href = 'https://twowildsoulsphotography.com/thank-you';
+  }, 800);
 }
 
 // Keep old function names as aliases so Klaviyo result screens still work
@@ -1433,8 +1427,8 @@ function experienceDecision(val) {
   if (val === 'no') {
     currentStep = STEPS.length; render();
   } else {
-    const contactIdx = STEPS.findIndex(s => s.id === 'contact');
-    currentStep = contactIdx;
+    // Contact step removed — route directly to result screen
+    currentStep = STEPS.length;
     render();
   }
 }
@@ -1483,6 +1477,18 @@ function populateOfferItems() {
 }
 
 // ── Loop helper — switch to a suggested service and restart from budget
+// ── Klaviyo capture from unmatch — "keep me posted" path ────────────
+// Called when user clicks "Keep Me Posted" on a future session button.
+// Sets up state for Klaviyo universal capture and renders the unified form.
+function loopToKlaviyoCapture(service) {
+  state.service  = service;
+  state.budget   = 'yes';    // They've passed the interest threshold by clicking
+  state.timing   = 'later';  // Mark as future/later so submitUnified routes to Klaviyo
+  // Preserve dueDate if present — it becomes useful context in the Klaviyo profile
+  currentStep = STEPS.length;
+  render();
+}
+
 // ── Loop helper — switch service, preserve date, re-qualify ─────────
 // The customer's due date is a fact about them, not the service. When they
 // loop from one pregnancy service to another, we keep the date and re-run
@@ -1581,8 +1587,8 @@ function renderMaternityUnmatch(content) {
           </button>
 
         </div>
-        <button class="btn-future-session" onclick="loopToService('maternity')">
-          Interested in a Future Maternity Session →
+        <button class="btn-future-session" onclick="loopToKlaviyoCapture('maternity')">
+          Keep Me Posted for a Future Maternity Session →
         </button>
       </div>
     </div>`;
@@ -1636,8 +1642,8 @@ function renderNewbornUnmatch(content) {
     '<span class="explore-card-arrow">\u2192</span>' +
     '</button>' +
     '</div>' +
-    '<button class="btn-future-session" onclick="loopToService(\'newborn\')">' +
-    'Interested in a Future Newborn Session \u2192' +
+    '<button class="btn-future-session" onclick="loopToKlaviyoCapture(\'newborn\')">' +
+    'Keep Me Posted for a Future Newborn Session \u2192' +
     '</button>' +
     '</div>' +
     '<div class="contact-links" style="margin-top:20px">' +
@@ -1716,14 +1722,19 @@ function goNext() {
   const active = activeSteps();
   const posNow = active.indexOf(currentStep);
 
-  // Due date: only hard-unqualified short-circuits to result screen.
-  // 'tooEarly' must still go through budget + contact before hitting Klaviyo.
+  // Due date step: always re-qualify on Continue to prevent blackout bypass.
+  // qualifyDueDate is also called on every date change in handleDueDateChange,
+  // but re-running here ensures stale state never sneaks through on back+continue.
   if (step && step.type === 'duedate') {
     if (!state.dueDate) return;
+    const q = qualifyDueDate(state.dueDate);
+    state.dueDateValid    = q.valid;
+    state.dueDateReason   = q.reason || null;
+    state.klavWindowOpens = q.klavWindowOpens || null;
     if (state.dueDateValid === 'unqualified') {
       currentStep = STEPS.length; render(); return;
     }
-    // 'good' and 'tooEarly' fall through to next active step (budget)
+    // 'good' and 'tooEarly' fall through to budget
   }
 
   // No separate contact step — all fields on result screen
