@@ -911,72 +911,71 @@ function qualifyDueDate(dueDateStr) {
   const service = state.service;
 
   if (service === 'maternity' || service === 'boudoir') {
-    const weeksNow      = weeksAlongOnDate(dueDateStr, today);
-    const weeksAtOpen   = weeksAlongOnDate(dueDateStr, firstAvail);
+    const weeksNow    = weeksAlongOnDate(dueDateStr, today);
+    const weeksAtOpen = weeksAlongOnDate(dueDateStr, firstAvail);
 
-    // Already at or past 32 weeks today — too late
-    if (weeksNow >= 32) {
-      return { valid: 'unqualified', reason: 'past32' };
-    }
+    // Hard unqualified gates — check BEFORE the tooEarly soft gate:
 
-    // Will be past 32 weeks by the time we open — can\'t fit them in
-    if (weeksAtOpen > 32) {
-      return { valid: 'unqualified', reason: 'tooEarlyDue' };
-    }
+    // Past 32 weeks today — cannot photograph at any maternity stage
+    if (weeksNow >= 32) return { valid: 'unqualified', reason: 'past32' };
 
-    // Their window hasn\'t opened yet by Aug 1 (under 18 weeks at opening) —
-    // capture their info via Klaviyo so we can follow up when the time is right.
-    // tws_window_opens_date = the date they\'ll be 20 weeks (anatomy scan ~= booking trigger).
-    if (weeksAtOpen < 18) {
-      const due         = new Date(dueDateStr + 'T12:00:00');
-      const windowOpens = new Date(due.getTime() - 18 * MS_WEEK); // due − 18 weeks = 22wk mark (confirmed against spec)
+    // Would be past 32 weeks by Aug 1 AND already past tooEarly threshold —
+    // The window has effectively passed for this season
+    if (weeksAtOpen > 32) return { valid: 'unqualified', reason: 'tooEarlyDue' };
+
+    // Under 22 weeks today — mom isn't emotionally invested yet.
+    // Only applies AFTER the unqualified gates so we don't capture
+    // people who would be past 32 wks at Aug 1 (genuinely can't serve them).
+    if (weeksNow < 22) {
+      const due = new Date(dueDateStr + 'T12:00:00');
+      const windowOpens = new Date(due.getTime() - 18 * MS_WEEK);
       return {
         valid: 'tooEarly',
-        reason: 'under18AtOpen',
+        reason: 'under22Today',
         klavWindowOpens: windowOpens.toISOString().slice(0, 10),
-        // Note shown on due-date step (informational only — not a gate)
-        noteHtml: `Your ideal booking window opens around <strong>${formatDate(windowOpens)}</strong> — near your anatomy scan. We\'ll reach out at exactly the right time.`
+        noteHtml: 'You\'re a little early in your pregnancy for us to lock anything in just yet. Fill in your details and we\'ll reach out around your anatomy scan \u2014 right when the timing is perfect.'
       };
     }
 
-    // 18–32 weeks at opening — valid session window.
-    // If their ideal window starts before Aug 1, note that Aug 1 is our earliest availability.
-    // The 'good' path always routes through budget → contact → Sprout.
-    const due        = new Date(dueDateStr + 'T12:00:00');
-    const sessionStart = new Date(due.getTime() - 32 * MS_WEEK); // ~32 weeks = latest start
+    // 22-32 weeks today AND in window at Aug 1 — fully qualified for Sprout
+    const due = new Date(dueDateStr + 'T12:00:00');
+    const sessionStart = new Date(due.getTime() - 32 * MS_WEEK);
     let noteHtml = '';
     if (sessionStart < firstAvail) {
-      noteHtml = `We\'re available starting <strong>${formatDate(firstAvail)}</strong> — the earliest we can schedule your session. Your window extends well into our available dates, so there\'s no urgency to worry about.`;
+      noteHtml = 'We\'re available starting <strong>' + formatDate(firstAvail) + '</strong> \u2014 your session window extends well into our available dates.';
     }
     return { valid: 'good', noteHtml };
   }
 
+
   if (service === 'newborn') {
-    const due      = new Date(dueDateStr + 'T12:00:00');
-    const july25   = new Date(firstAvail.getFullYear(), 6, 25);
-    const aug7     = new Date(firstAvail.getFullYear(), 7, 7);
+    const due    = new Date(dueDateStr + 'T12:00:00');
+    const july25 = new Date(firstAvail.getFullYear(), 6, 25);
+    const aug7   = new Date(firstAvail.getFullYear(), 7, 7);
     const outreachDeadline = new Date(july25.getTime() - 14 * 24 * 3600 * 1000);
 
-    // Good newborn window: due July 25-Aug 7, must reach out by July 11
+    // Good: baby due July 25-Aug 7 AND we have enough lead time
     if (due >= july25 && due <= aug7) {
       return today <= outreachDeadline
         ? { valid: 'good' }
         : { valid: 'unqualified', reason: 'tooLateOutreach' };
     }
 
-    // tooEarly: mother is <20 wks pregnant today — not near our newborn window
-    // but likely a maternity client. Route to Klaviyo maternity list (same as maternity tooEarly).
+    // Under 22 weeks pregnant today — too early. Route to Klaviyo maternity list.
+    // Same logic as maternity tooEarly: reach out near anatomy scan.
     const weeksNow = weeksAlongOnDate(dueDateStr, today);
-    if (weeksNow < 20) {
+    if (weeksNow < 22) {
       const windowOpens = new Date(due.getTime() - 18 * MS_WEEK);
       return {
         valid: 'tooEarly',
         reason: 'newbornTooEarly',
         klavWindowOpens: windowOpens.toISOString().slice(0, 10),
-        noteHtml: 'Your baby is not arriving near our current newborn window, but you may be a great fit for a maternity session. We will add you to our list and reach out around your anatomy scan.'
+        noteHtml: 'Your baby isn\'t arriving near our current newborn window. Fill in your details and we\'ll reach out near your anatomy scan \u2014 you may be a great fit for a maternity session instead.'
       };
     }
 
+    // Baby due before July 25 or after Aug 7 and past 22 weeks — unqualified
+    // Only option is family (no more pregnancy services available)
     return { valid: 'unqualified', reason: due < july25 ? 'beforeJuly' : 'afterAug' };
   }
 
@@ -1327,16 +1326,15 @@ const SERVICE_DISPLAY = {
 // these skip the now/later fork on the unified form
 function hasFixedRouting() {
   const svc = state.service;
-  // Maternity/boudoir tooEarly → Klaviyo maternity, no fork
-  if ((svc === 'maternity' || svc === 'boudoir') && state.dueDateValid === 'tooEarly') return true;
-  // Newborn tooEarly → Klaviyo maternity (same list), no fork
-  if (svc === 'newborn' && state.dueDateValid === 'tooEarly') return true;
-  // Senior with grad year 'later' (2028+) → always Klaviyo, no fork
+  const dv  = state.dueDateValid;
+  // All pregnancy services have fixed routing — no fork ever shown
+  // tooEarly → Klaviyo maternity list (no "later" option, they are already captured)
+  // good     → Sprout only (no "later" option, they are ready to book)
+  if (svc === 'maternity' || svc === 'boudoir' || svc === 'newborn') return true;
+  // Senior 2028+ → Klaviyo waitlist, no fork
   if (svc === 'senior' && state.gradYear === 'later') return true;
-  // Senior 'soon' with specific timing month → Sprout, no fork
+  // Senior soon + specific timing month → Sprout, no fork
   if (svc === 'senior' && state.gradYear === 'soon' && state.timing && state.timing !== 'later') return true;
-  // Newborn good → Sprout always
-  if (svc === 'newborn') return true;
   return false;
 }
 
@@ -1516,11 +1514,11 @@ function getResultCopy() {
   if (svc === 'newborn') {
     return { eyebrow: 'Reserve Your Session', headline: 'Your timing is perfect.', body: 'Fill in your details below and we\'ll reach out right away to confirm your newborn session.', spot: '' };
   }
-  if ((svc === 'maternity' || svc === 'boudoir') && dv === 'tooEarly') {
-    return { eyebrow: 'Your Spot Is Reserved', headline: 'We\'ll reach out when your window opens.', body: 'Your ideal session timing opens near your anatomy scan. We\'ll be in touch at exactly the right time.', spot: '' };
+  if ((svc === 'maternity' || svc === 'boudoir' || svc === 'newborn') && dv === 'tooEarly') {
+    return { eyebrow: 'You\'re on Our List', headline: 'We\'ll reach out <em>when the time is right.</em>', body: 'You\'re a little early in your pregnancy for us to lock anything in. Fill in your details below and we\'ll be in touch near your anatomy scan — right when you\'ll be ready.', spot: '' };
   }
   if ((svc === 'maternity' || svc === 'boudoir') && dv === 'good') {
-    return { eyebrow: 'Reserve Your Session', headline: 'We\'d love to work with you.', body: 'Based on your due date, the timing works beautifully. Fill in your details below.', spot: '' };
+    return { eyebrow: 'Reserve Your Session', headline: 'The timing is <em>perfect.</em>', body: 'Your due date puts you right in our ideal session window. Fill in your details and we\'ll be in touch within one business day to confirm everything.', spot: '' };
   }
   if (svc === 'senior' && state.gradYear === 'later') {
     return { eyebrow: 'You\'re on the Waitlist', headline: 'We\'ll reach out when <em>it\'s time.</em>', body: 'We\'ll be in touch when we start booking sessions for the class of 2028 and beyond — you\'ll be first in line.', spot: '' };
@@ -1911,12 +1909,13 @@ function loopToService(newService) {
     state.dueDateNote     = q.noteHtml || '';
 
     if (q.valid === 'unqualified') {
-      // The date doesn't work for this service either — show next unmatch
+      // Date doesn't work — show the next unmatch screen
       currentStep = STEPS.length;
       render();
       return;
     }
-    // Date qualifies — skip duedate step, go to budget so they don't re-enter
+    // tooEarly or good — both go to budget first (so price is always shown),
+    // then result routing handles Klaviyo vs Sprout correctly
     currentStep = STEPS.findIndex(s => s.id === 'budget');
     render();
     return;
@@ -1939,118 +1938,101 @@ function loopToService(newService) {
 
 
 
-// ── Maternity unmatch — offer Newborn + Family ────────────────────
+// ── Maternity unmatch ────────────────────────────────────────────────
+// Maternity is unqualified. Show newborn ONLY if their due date qualifies
+// for newborn (July 25-Aug 7). Otherwise family only.
 function renderMaternityUnmatch(content) {
   document.getElementById('progressShell').style.display = 'none';
   document.getElementById('bottomNav').style.display     = 'none';
-  content.innerHTML = `
-    <div class="result-screen">
-      <p class="result-eyebrow">Availability Notice</p>
-      <h2 class="result-headline">We wish we could <em>make it work.</em></h2>
-      <p class="result-body">Maternity sessions are photographed between 20 and 32 weeks. Based on your due date, that window falls outside our current availability — but this doesn\'t have to be the end of the story.</p>
 
-      <div class="explore-section">
-        <span class="explore-label">Explore what\'s available for you</span>
-        <div class="explore-cards">
+  // Check if their date qualifies for newborn
+  const savedService = state.service;
+  state.service = 'newborn';
+  const nbQ = state.dueDate ? qualifyDueDate(state.dueDate) : { valid: 'unqualified' };
+  state.service = savedService;
 
-          <button class="explore-card" onclick="loopToService('newborn')">
-            <span class="explore-card-label">When baby arrives</span>
-            <span class="explore-card-title">Newborn Session</span>
-            <span class="explore-card-desc">Capture the first days of life with a fully styled, guided studio experience — props, wraps, and everything provided.</span>
-            <div class="perks-grid" style="margin:8px 0 0">
-              <span class="perk-chip highlight">Newborn Props &amp; Wraps</span>
-              <span class="perk-chip highlight">Studio Session</span>
-              <span class="perk-chip">Hair &amp; Makeup</span>
-              <span class="perk-chip">Guided Posing</span>
-            </div>
-            <span class="explore-card-arrow">→</span>
-          </button>
-
-          <button class="explore-card" onclick="loopToService('family')">
-            <span class="explore-card-label">Anytime that works for you</span>
-            <span class="explore-card-title">Family Session</span>
-            <span class="explore-card-desc">Your growing family — studio, outdoors, or both. A fully guided experience that captures everyone at their best.</span>
-            <div class="perks-grid" style="margin:8px 0 0">
-              <span class="perk-chip highlight">Outdoor Locations</span>
-              <span class="perk-chip">Hair &amp; Makeup</span>
-              <span class="perk-chip">Wardrobe Guidance</span>
-              <span class="perk-chip">All Ages Welcome</span>
-            </div>
-            <span class="explore-card-arrow">→</span>
-          </button>
-
-        </div>
-        <button class="btn-future-session" onclick="loopToKlaviyoCapture('maternity')">
-          Keep Me Posted for a Future Maternity Session →
-        </button>
-      </div>
-    </div>`;
-}
-
-// ── Newborn unmatch — offer Maternity + Family + unified form capture ──
-function renderNewbornUnmatch(content) {
-  document.getElementById('progressShell').style.display = 'none';
-  document.getElementById('bottomNav').style.display     = 'none';
-
-  // Only show maternity card if maternity would ACTUALLY QUALIFY —
-  // must be 18-32 wks today AND 18-32 wks at firstAvailableDate (Aug 1).
-  // If the date fails maternity rules, showing the card creates an infinite loop.
-  let showMaternity = false;
-  if (state.dueDate) {
-    const _today = new Date(); _today.setHours(0,0,0,0);
-    const _fa    = firstAvailableDate();
-    const _wNow  = weeksAlongOnDate(state.dueDate, _today);
-    const _wOpen = weeksAlongOnDate(state.dueDate, _fa);
-    // Maternity qualifies: 18-32 wks today, and 18-32 wks at first available date
-    showMaternity = _wNow >= 18 && _wNow <= 32 && _wOpen >= 18 && _wOpen <= 32;
-  }
-
-  const maternityCard = !showMaternity ? '' :
-    '<button class="explore-card" onclick="loopToService(\'maternity\')">' +
-    '<span class="explore-card-label">Before baby arrives</span>' +
-    '<span class="explore-card-title">Maternity Session</span>' +
-    '<span class="explore-card-desc">Capture your bump beautifully — designer gowns, outdoor locations, hair and makeup all included.</span>' +
+  const newbornCard = (nbQ.valid === 'good') ?
+    '<button class="explore-card" onclick="loopToService(\'newborn\')">' +
+    '<span class="explore-card-label">When baby arrives</span>' +
+    '<span class="explore-card-title">Newborn Session</span>' +
+    '<span class="explore-card-desc">Capture the first days of life — studio styled, fully guided, props and wraps provided.</span>' +
     '<div class="perks-grid" style="margin:8px 0 0">' +
-    '<span class="perk-chip highlight">Designer Maternity Gowns</span>' +
-    '<span class="perk-chip highlight">Outdoor Available</span>' +
+    '<span class="perk-chip highlight">Newborn Props &amp; Wraps</span>' +
+    '<span class="perk-chip highlight">Studio Session</span>' +
     '<span class="perk-chip">Hair &amp; Makeup</span>' +
     '</div>' +
-    '<span class="explore-card-arrow">\u2192</span>' +
-    '</button>';
+    '<span class="explore-card-arrow">→</span>' +
+    '</button>' : '';
 
   content.innerHTML =
     '<div class="result-screen">' +
     '<p class="result-eyebrow">Availability Notice</p>' +
-    '<h2 class="result-headline">The timing isn\'t quite right \u2014 <em>but we\'d love to connect.</em></h2>' +
-    '<p class="result-body">We\'re currently only scheduling newborn sessions for babies arriving the last week of July. Here\'s what we can do for you.</p>' +
+    '<h2 class="result-headline">We wish we could <em>make it work.</em></h2>' +
+    '<p class="result-body">Maternity sessions are photographed between 22 and 32 weeks. Based on your due date, that window doesn\'t align with our current availability — but there are still beautiful options for your family.</p>' +
     '<div class="explore-section">' +
     '<span class="explore-label">What\'s available for you</span>' +
     '<div class="explore-cards">' +
-    maternityCard +
-    '<button class="explore-card" onclick="loopToService(\'family\')">' +
-    '<span class="explore-card-label">Your growing family</span>' +
+    newbornCard +
+    '<button class="explore-card" onclick="loopToService(\'family\')"> ' +
+    '<span class="explore-card-label">Anytime that works for you</span>' +
     '<span class="explore-card-title">Family Session</span>' +
-    '<span class="explore-card-desc">A family session captures everyone beautifully \u2014 on your timeline, fully guided, hair and makeup included.</span>' +
+    '<span class="explore-card-desc">Your growing family — studio, outdoors, or both. Fully guided with hair and makeup included.</span>' +
     '<div class="perks-grid" style="margin:8px 0 0">' +
     '<span class="perk-chip highlight">Outdoor Locations</span>' +
     '<span class="perk-chip">Hair &amp; Makeup</span>' +
     '<span class="perk-chip">Wardrobe Guidance</span>' +
     '<span class="perk-chip">All Ages Welcome</span>' +
     '</div>' +
-    '<span class="explore-card-arrow">\u2192</span>' +
+    '<span class="explore-card-arrow">→</span>' +
     '</button>' +
     '</div>' +
-    '<button class="btn-future-session" onclick="loopToKlaviyoCapture(\'newborn\')">' +
-    'Keep Me Posted for a Future Newborn Session \u2192' +
-    '</button>' +
     '</div>' +
     '<div class="contact-links" style="margin-top:20px">' +
     '<a href="' + SMS_HREF + '" class="contact-link contact-link-primary">' +
     '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
-    'Text Us \u00a0' + PHONE_DISPLAY +
+    'Text Us  ' + PHONE_DISPLAY +
     '</a></div>' +
     '</div>';
 }
+
+// ── Newborn unmatch ─────────────────────────────────────────────────
+// Baby is not arriving in our newborn window (July 25-Aug 7).
+// Only option is family. No maternity loop — if they were maternity-eligible
+// they would have gone to maternity unmatch, not here.
+function renderNewbornUnmatch(content) {
+  document.getElementById('progressShell').style.display = 'none';
+  document.getElementById('bottomNav').style.display     = 'none';
+
+  content.innerHTML =
+    '<div class="result-screen">' +
+    '<p class="result-eyebrow">Availability Notice</p>' +
+    '<h2 class="result-headline">The timing isn\'t quite right — <em>but we\'d love to connect.</em></h2>' +
+    '<p class="result-body">We schedule newborn sessions only for babies arriving the last week of July. Your due date doesn\'t fall in that window — but we\'d love to photograph your growing family.</p>' +
+    '<div class="explore-section">' +
+    '<span class="explore-label">What\'s available for you</span>' +
+    '<div class="explore-cards">' +
+    '<button class="explore-card" onclick="loopToService(\'family\')">'+
+    '<span class="explore-card-label">Your growing family</span>' +
+    '<span class="explore-card-title">Family Session</span>' +
+    '<span class="explore-card-desc">Capture your family beautifully — on your timeline, fully guided, hair and makeup included.</span>' +
+    '<div class="perks-grid" style="margin:8px 0 0">' +
+    '<span class="perk-chip highlight">Outdoor Locations</span>' +
+    '<span class="perk-chip">Hair &amp; Makeup</span>' +
+    '<span class="perk-chip">Wardrobe Guidance</span>' +
+    '<span class="perk-chip">All Ages Welcome</span>' +
+    '</div>' +
+    '<span class="explore-card-arrow">→</span>' +
+    '</button>' +
+    '</div>' +
+    '</div>' +
+    '<div class="contact-links" style="margin-top:20px">' +
+    '<a href="' + SMS_HREF + '" class="contact-link contact-link-primary">' +
+    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+    'Text Us  ' + PHONE_DISPLAY +
+    '</a></div>' +
+    '</div>';
+}
+
 
 
 // ── Budget unmatch → timed redirect ──────────────────────────────
