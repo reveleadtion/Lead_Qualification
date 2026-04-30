@@ -227,6 +227,83 @@ main {
 .opt-label { display: block; line-height: 1.3; }
 .opt-sub   { display: block; font-size: 11.5px; color: var(--text2); margin-top: 3px; }
 
+/* ── Investment / Budget step ───────────────────────────────────────── */
+.investment-card {
+  background: var(--text);
+  border-radius: 6px;
+  padding: 24px 20px 20px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.investment-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--gold) 0%, rgba(168,146,90,0.3) 100%);
+}
+.invest-eyebrow {
+  font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(245,243,239,0.45); margin-bottom: 14px; display: block;
+}
+.invest-numbers {
+  display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px;
+}
+.invest-amount {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(44px, 12vw, 60px);
+  font-weight: 300; line-height: 1;
+  color: var(--gold); letter-spacing: -0.01em;
+}
+.invest-label {
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgba(245,243,239,0.45);
+}
+.invest-avg {
+  font-size: 12px; color: rgba(245,243,239,0.5);
+  margin-bottom: 18px; font-style: italic;
+}
+.invest-avg strong { color: rgba(245,243,239,0.75); font-weight: 400; }
+.invest-includes {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0;
+}
+.invest-chip {
+  font-size: 10.5px; letter-spacing: 0.06em;
+  border: 1px solid rgba(168,146,90,0.35);
+  color: rgba(245,243,239,0.7);
+  padding: 4px 10px; border-radius: 20px;
+}
+.invest-chip.highlight {
+  background: rgba(168,146,90,0.15);
+  border-color: rgba(168,146,90,0.5);
+  color: var(--gold);
+}
+.invest-divider {
+  height: 1px; background: rgba(245,243,239,0.08);
+  margin: 18px 0 16px;
+}
+.invest-note {
+  font-size: 11px; color: rgba(245,243,239,0.38);
+  font-style: italic; text-align: center; letter-spacing: 0.03em;
+}
+.budget-choices { display: flex; flex-direction: column; gap: 10px; }
+.budget-btn {
+  width: 100%; text-align: left; cursor: pointer;
+  border-radius: 4px; padding: 16px 20px;
+  display: flex; align-items: center; gap: 14px;
+  transition: all 0.2s; border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+.budget-btn:hover { border-color: var(--gold-bdr); background: var(--surface2); }
+.budget-btn.selected { background: var(--surface2); border-color: var(--gold); box-shadow: 0 0 0 1px rgba(199,178,122,0.2); }
+.budget-btn .opt-check { width: 19px; height: 19px; border: 1px solid var(--border); border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.budget-btn.selected .opt-check { background: var(--gold); border-color: var(--gold); }
+.budget-btn.selected .opt-check::after { content: ''; width: 6px; height: 6px; background: #fff; border-radius: 50%; }
+.budget-btn-text { flex: 1; }
+.budget-btn-label { display: block; font-size: 14.5px; font-weight: 400; color: var(--text); line-height: 1.3; }
+.budget-btn-sub   { display: block; font-size: 11.5px; color: var(--text2); margin-top: 3px; }
+
 /* ── Text / Email / Tel inputs ───────────────────────────────────────── */
 .text-field-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
 .text-field {
@@ -701,7 +778,7 @@ const MAIN_SITE     = 'https://twowildsoulsphotography.com';
 const BUDGET_REDIRECT_DELAY = 8; // seconds before redirecting budget unmatch
 
 // Klaviyo
-const KLAV_PUBLIC        = 'WgMSBs';
+const KLAV_PUBLIC         = 'WgMSBs';
 const KLAV_LIST_MATERNITY = 'V3bUGq';   // Early maternity (<18wks at open)
 const KLAV_LIST_SENIOR    = 'Xtu2rD';   // Senior waitlist 2028+
 const KLAV_LIST_UNIVERSAL = 'Rd5QpG';   // Later/flexible — family, branding, beauty, future newborn
@@ -788,14 +865,7 @@ const STEPS = [
       { value: 'later', label: 'Later / Flexible',  sub: null },
     ]
   },
-  { id: 'budget',  type: 'options', label: 'A quick note on investment.',
-    hint: 'Sessions start at $1,290 — fully all-inclusive. Hair, makeup, wardrobe, and every detail taken care of for you. Average client investment is $3,000.',
-    options: [
-      { value: 'yes',   label: 'Yes, that works for me', sub: null },
-      { value: 'learn', label: "I\'d like to know more first", sub: null },
-      { value: 'no',    label: "That\'s outside my budget right now", sub: null },
-    ]
-  },
+  { id: 'budget', type: 'budget', label: 'investment' },
   // Contact step removed — fields collected on final result screen
 ];
 
@@ -1012,6 +1082,8 @@ function render() {
   // Step content
   if (step.type === 'duedate') {
     renderDueDateStep(content, step);
+  } else if (step.type === 'budget') {
+    renderBudgetStep(content);
   } else if (step.type === 'options') {
     renderOptionsStep(content, step);
   } else if (step.type === 'contact') {
@@ -1022,6 +1094,7 @@ function render() {
 }
 
 function needsSelection(step) {
+  if (step.type === 'budget')  return !state.budget;
   if (step.type === 'options') return !state[step.id];
   if (step.type === 'duedate') return !state.dueDate;
   return false;
@@ -1079,6 +1152,74 @@ function handleDueDateChange() {
   if (q.klavWindowOpens) state.klavWindowOpens = q.klavWindowOpens;
 
   btn.disabled = false;
+}
+
+// ── Budget / Investment Step ─────────────────────────────────────────
+function renderBudgetStep(content) {
+  const svc = state.service;
+  // Service-specific what's-included chips
+  const baseChips = [
+    { label: 'Hair & Makeup',    hi: true  },
+    { label: 'Full Wardrobe',    hi: true  },
+    { label: 'Planning Consult', hi: false },
+    { label: 'Guided Posing',    hi: false },
+    { label: 'No Hidden Fees',   hi: false },
+  ];
+  if (svc === 'maternity' || svc === 'boudoir') {
+    baseChips.splice(1, 1, { label: 'Designer Gown Collection', hi: true });
+  }
+  if (svc === 'newborn') {
+    baseChips.splice(1, 1, { label: 'Newborn Props & Wraps', hi: true });
+  }
+  if (svc === 'senior') {
+    baseChips.push({ label: "Cap & Gown Session Included", hi: false });
+  }
+
+  const chips = baseChips.map(function(c) {
+    return '<span class="invest-chip' + (c.hi ? ' highlight' : '') + '">' + c.label + '</span>';
+  }).join('');
+
+  const choices = [
+    { value: 'yes',   label: "That works — let's do this",    sub: "Move forward and reserve your session" },
+    { value: 'learn', label: "I'd like to know more first",    sub: "See exactly what's included, start to finish" },
+    { value: 'no',    label: "That's outside my budget",       sub: "No worries — let's point you in the right direction" },
+  ];
+
+  const btns = choices.map(function(c) {
+    const sel = state.budget === c.value ? ' selected' : '';
+    return '<button class="budget-btn' + sel + '" onclick="selectBudget(\'' + c.value + '\', this)">'
+      + '<span class="opt-check"></span>'
+      + '<span class="budget-btn-text">'
+      + '<span class="budget-btn-label">' + c.label + '</span>'
+      + '<span class="budget-btn-sub">'   + c.sub   + '</span>'
+      + '</span>'
+      + '</button>';
+  }).join('');
+
+  content.innerHTML =
+    '<div class="question-wrap">'
+    + '<div class="investment-card">'
+    + '<span class="invest-eyebrow">Your Investment</span>'
+    + '<div class="invest-numbers">'
+    + '<span class="invest-amount">$1,290</span>'
+    + '<span class="invest-label">starting from</span>'
+    + '</div>'
+    + '<p class="invest-avg">Most clients invest <strong>around $3,000</strong> — fully all-inclusive, no surprises.</p>'
+    + '<div class="invest-includes">' + chips + '</div>'
+    + '<div class="invest-divider"></div>'
+    + '<p class="invest-note">One investment covers everything — from planning to your finished portraits.</p>'
+    + '</div>'
+    + '<div class="budget-choices">' + btns + '</div>'
+    + '<p class="val-msg" id="valMsg"></p>'
+    + '</div>';
+}
+
+function selectBudget(value, el) {
+  state.budget = value;
+  document.querySelectorAll('.budget-btn').forEach(function(b) { b.classList.remove('selected'); });
+  el.classList.add('selected');
+  document.getElementById('btnNext').disabled = false;
+  setTimeout(goNext, 280);
 }
 
 // ── Options Step ────────────────────────────────────────────────────
@@ -1947,7 +2088,7 @@ function goNext() {
 
   // No separate contact step — all fields on result screen
   // Budget routing
-  if (step && step.type === 'options' && step.id === 'budget') {
+  if (step && (step.type === 'budget' || (step.type === 'options' && step.id === 'budget'))) {
     if (state.budget === 'no' || state.budget === 'learn') {
       currentStep = STEPS.length; render(); return;
     }
