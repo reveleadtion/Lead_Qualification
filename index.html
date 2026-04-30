@@ -746,28 +746,31 @@ const STEPS = [
   },
   { id: 'duedate', type: 'duedate', label: 'When is your baby due?',
     hint: null,
-    // shown only for maternity / boudoir / newborn
     showIf: () => ['maternity','boudoir','newborn'].includes(state.service)
+  },
+  // Senior: grad year asked FIRST — two simple options drive the entire routing decision
+  { id: 'gradyear', type: 'options', label: 'When does your senior graduate?',
+    hint: 'This helps us match your senior to the right session window.',
+    showIf: () => state.service === 'senior',
+    options: [
+      { value: 'soon',  label: 'Class of 2026 or 2027', sub: 'Session this summer or fall' },
+      { value: 'later', label: 'Class of 2028 or beyond', sub: 'Future session — get on the waitlist' },
+    ]
   },
   { id: 'timing',  type: 'options', label: 'When are you hoping to have your session?',
     hint: 'Our next availability opens August 1st.',
-    // shown only for non-pregnancy services
-    showIf: () => !['maternity','boudoir','newborn'].includes(state.service),
+    // Shown for non-pregnancy, non-senior services AND for seniors graduating soon (2026/2027)
+    showIf: () => {
+      const svc = state.service;
+      if (['maternity','boudoir','newborn'].includes(svc)) return false;
+      if (svc === 'senior') return state.gradYear === 'soon';
+      return true;
+    },
     options: [
-      { value: 'aug',   label: 'August',          sub: SPOTS.aug + ' spots remaining' },
-      { value: 'sep',   label: 'September',       sub: SPOTS.sep + ' spots remaining' },
-      { value: 'oct',   label: 'October',         sub: SPOTS.oct + ' spots remaining' },
-      { value: 'later', label: 'Later / Flexible', sub: null },
-    ]
-  },
-  { id: 'gradyear', type: 'options', label: 'What year does your senior graduate?',
-    hint: 'This helps us find the right spot on our calendar for you.',
-    showIf: () => state.service === 'senior',
-    options: [
-      { value: 'spring2026', label: 'Spring 2026', sub: 'Senior session this summer' },
-      { value: 'spring2027', label: 'Spring 2027', sub: 'Session in summer 2026' },
-      { value: 'spring2028', label: 'Spring 2028', sub: 'Session in summer 2027' },
-      { value: 'spring2029', label: 'Spring 2029', sub: 'Session in summer 2028' },
+      { value: 'aug',   label: 'August',           sub: SPOTS.aug + ' spots remaining' },
+      { value: 'sep',   label: 'September',        sub: SPOTS.sep + ' spots remaining' },
+      { value: 'oct',   label: 'October',          sub: SPOTS.oct + ' spots remaining' },
+      { value: 'later', label: 'Later / Flexible',  sub: null },
     ]
   },
   { id: 'budget',  type: 'options', label: 'A quick note on investment.',
@@ -945,13 +948,16 @@ function render() {
     //    Route to Klaviyo capture instead of Sprout
     if (dv === 'tooEarly') { renderKlavCapture(content); return; }
 
-    // 5. Senior routing — driven by grad year, not timing
-    if (service === 'senior' && state.gradYear) {
-      const yr = parseInt(state.gradYear.replace('spring','').replace('fall',''), 10);
-      if (yr >= 2028) {
+    // 5. Senior routing — driven by grad year choice
+    if (service === 'senior') {
+      if (state.gradYear === 'later') {
         renderKlavSenior(content); return;   // 2028+ → Klaviyo waitlist
       }
-      // 2026/2027 → Sprout (falls through to step 7)
+      // 'soon' (2026/2027): check timing — if 'later' → Klaviyo universal, else → Sprout
+      if (state.gradYear === 'soon' && state.timing === 'later') {
+        renderKlavUniversal(content); return;
+      }
+      // 'soon' with specific month (aug/sep/oct) → Sprout (falls through to step 7)
     }
 
     // 6. Later/flexible timing (non-senior, non-pregnancy) → Klaviyo universal
@@ -1152,11 +1158,124 @@ function hasFixedRouting() {
   const svc = state.service;
   // Maternity tooEarly → Klaviyo maternity always
   if ((svc === 'maternity' || svc === 'boudoir') && state.dueDateValid === 'tooEarly') return true;
-  // Senior with grad year → always routes by grad year (Sprout or Klaviyo), no fork
-  if (svc === 'senior' && state.gradYear) return true;
+  // Senior with grad year 'later' (2028+) → always Klaviyo, no fork
+  if (svc === 'senior' && state.gradYear === 'later') return true;
+  // Senior 'soon' with specific timing month → Sprout, no fork
+  if (svc === 'senior' && state.gradYear === 'soon' && state.timing && state.timing !== 'later') return true;
   // Newborn good → Sprout always
   if (svc === 'newborn') return true;
   return false;
+}
+
+// ── Klaviyo property builders ─────────────────────────────────────────
+
+function buildMaternityProps() {
+  const today   = new Date(); today.setHours(0,0,0,0);
+  const dueDate = state.dueDate || '';
+  const winDate = state.klavWindowOpens || '';
+  const dueFmt  = dueDate
+    ? new Date(dueDate + 'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})
+    : '';
+  const weeksNow = dueDate
+    ? Math.max(1, Math.round(40 - (new Date(dueDate+'T12:00:00') - today) / MS_WEEK))
+    : '';
+  return {
+    '$phone_number_region': 'US',
+    '$source':               'early_optin_embed',
+    'tws_source':            'early_optin_embed',
+    'tws_due_date':          dueFmt,
+    'tws_window_opens_date': winDate,
+    'tws_week_at_signup':    weeksNow,
+    'tws_quiz_status':       'early',
+    'tws_quiz_package':      'whiteGlove',
+    'tws_result_url':        SERVICE_URLS[state.service] || SERVICE_URLS.maternity,
+  };
+}
+
+function buildSeniorProps() {
+  // gradYear is 'later' (2028+) — map to Klaviyo properties
+  return {
+    '$phone_number_region': 'US',
+    '$source':              'senior_waitlist_embed',
+    'tws_source':           'senior_waitlist_embed',
+    'tws_senior_waitlist':  true,
+    'tws_grad_year':        'spring2028plus',
+    'tws_grad_label':       'Class of 2028 or Later',
+    'tws_session_summer':   'Summer 2027',
+    'tws_outreach_window':  'winter/spring 2027',
+    'tws_outreach_date':    '2027-04-01T00:00:00',
+    'tws_quiz_package':     'whiteglove',
+    'tws_result_url':       SERVICE_URLS.senior,
+  };
+}
+
+function buildUniversalProps() {
+  const svc = state.service || 'family';
+  return {
+    '$phone_number_region': 'US',
+    '$source':              'qualifier_embed',
+    'tws_source':           'qualifier_embed',
+    'tws_service':          svc,
+    'tws_quiz_package':     'whiteGlove',
+    'tws_result_url':       SERVICE_URLS[svc] || SERVICE_URLS.family,
+  };
+}
+
+// Core Klaviyo submit — shared by all Klaviyo paths
+async function submitToKlaviyo(listId, properties, statusEl, successMsg) {
+  const name  = state.name  || '';
+  const email = state.email || '';
+  if (!name || !email) {
+    if (statusEl) { statusEl.style.color = 'var(--error)'; statusEl.textContent = 'Something went wrong \u2014 please text us directly.'; }
+    return;
+  }
+  if (statusEl) { statusEl.style.color = 'var(--text2)'; statusEl.textContent = 'Saving your spot\u2026'; }
+  const parts = name.split(' ');
+  const firstName = parts[0];
+  const lastName  = parts.slice(1).join(' ');
+  try {
+    await fetch('https://a.klaviyo.com/client/profiles/?company_id=' + KLAV_PUBLIC, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', revision: '2023-12-15' },
+      body: JSON.stringify({ data: { type: 'profile', attributes: {
+        email, first_name: firstName, last_name: lastName, properties
+      }}})
+    });
+    const subRes = await fetch('https://a.klaviyo.com/client/subscriptions/?company_id=' + KLAV_PUBLIC, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', revision: '2023-12-15' },
+      body: JSON.stringify({ data: {
+        type: 'subscription',
+        attributes: { profile: { data: { type: 'profile', attributes: { email, first_name: firstName, last_name: lastName }}}},
+        relationships: { list: { data: { type: 'list', id: listId }}}
+      }})
+    });
+    if (subRes.status === 202 || subRes.ok) {
+      if (statusEl) {
+        statusEl.style.color = 'var(--gold)';
+        statusEl.textContent = successMsg || '\u2713 You\'re on the list.';
+      }
+      // Show success UI after Klaviyo capture
+      const form = document.getElementById('unifiedForm');
+      if (form) {
+        const div = document.createElement('div');
+        div.className = 'success-screen';
+        div.innerHTML = '<span class="success-icon">\u2713</span>'
+          + '<h2 class="success-headline">You\'re on our list.<br><em>We\'ll be in touch.</em></h2>'
+          + '<p class="success-body">' + (successMsg || 'We\'ll reach out when the time is right.') + '</p>';
+        form.parentNode.replaceChild(div, form);
+      }
+    } else { throw new Error('status ' + subRes.status); }
+  } catch (err) {
+    if (statusEl) { statusEl.style.color = 'var(--error)'; statusEl.textContent = 'Something didn\'t save \u2014 please text us directly.'; }
+  }
+}
+
+// Legacy submitKlaviyo — kept for safety
+async function submitKlaviyo() {
+  const statusEl = document.getElementById('klav-status');
+  await submitToKlaviyo(KLAV_LIST_MATERNITY, buildMaternityProps(), statusEl,
+    '\u2713 You\'re on the list. We\'ll be in touch around your anatomy scan.');
 }
 
 function buildAutoNote() {
@@ -1170,7 +1289,8 @@ function buildAutoNote() {
     parts.push('Preferred timing: ' + (map[state.timing] || state.timing));
   }
   if (state.gradYear) {
-    parts.push('Grad year: ' + state.gradYear.replace('spring','Spring ').replace('fall','Fall '));
+    const gyLabel = state.gradYear === 'later' ? 'Class of 2028+' : state.gradYear === 'soon' ? 'Class of 2026/2027' : state.gradYear;
+    parts.push('Grad year: ' + gyLabel);
   }
   parts.push('Source: qualifier form');
   return parts.join(' | ');
@@ -1192,8 +1312,11 @@ function getResultCopy() {
   if ((svc === 'maternity' || svc === 'boudoir') && dv === 'good') {
     return { eyebrow: 'Reserve Your Session', headline: 'We\'d love to work with you.', body: 'Based on your due date, the timing works beautifully. Fill in your details below.', spot: '' };
   }
-  if (svc === 'senior' && state.timing === 'later') {
-    return { eyebrow: 'You\'re on the Waitlist', headline: 'We\'ll reach out when it\'s time.', body: 'We\'ll be in touch when we start booking your session year — you\'ll be first in line.', spot: '' };
+  if (svc === 'senior' && state.gradYear === 'later') {
+    return { eyebrow: 'You\'re on the Waitlist', headline: 'We\'ll reach out when <em>it\'s time.</em>', body: 'We\'ll be in touch when we start booking sessions for the class of 2028 and beyond — you\'ll be first in line.', spot: '' };
+  }
+  if (svc === 'senior' && state.gradYear === 'soon') {
+    return { eyebrow: 'Reserve Your Session', headline: 'Let\'s capture <em>this milestone.</em>', body: 'We\'d love to work with your senior. Select your preferred session month and fill in your details below.', spot: '' };
   }
   const spot = timing ? (spotMap[timing] || '') : '';
   const body = spot ? 'We have <strong>' + spot + '</strong>. Fill in your details below and we\'ll be in touch within one business day.' : 'We\'d love to connect. Fill in your details below and we\'ll be in touch.';
@@ -1320,8 +1443,7 @@ async function submitUnified() {
 
   if ((svc === 'maternity' || svc === 'boudoir') && dv === 'tooEarly') {
     dest = 'klaviyo_maternity';
-  } else if (svc === 'senior' && state.gradYear &&
-             parseInt((state.gradYear).replace('spring','').replace('fall',''), 10) >= 2028) {
+  } else if (svc === 'senior' && state.gradYear === 'later') {
     dest = 'klaviyo_senior';
   } else if (!hasFixedRouting() && forkChoice === 'later') {
     dest = 'klaviyo_universal';
