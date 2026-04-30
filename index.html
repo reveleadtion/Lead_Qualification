@@ -258,6 +258,19 @@ textarea.text-field {
 }
 /* Fork — now/later selection */
 .fork-row { margin: 4px 0 2px; }
+.month-picker {
+  display: none;
+  gap: 10px;
+  margin-top: 8px;
+  animation: fadeUp 0.2s ease both;
+}
+.month-picker.visible { display: flex; }
+.month-picker select { flex: 1; margin-bottom: 0; }
+.fork-hint {
+  font-size: 11px; letter-spacing: 0.06em; color: var(--text2);
+  margin-top: 4px; display: none;
+}
+.fork-hint.visible { display: block; }
 .fork-label {
   display: block;
   font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
@@ -724,6 +737,8 @@ const state = {
   name: null,
   email: null,
   phone: null,
+  prefMonth: null,   // '01'-'12' — preferred session month for universal Klaviyo path
+  prefYear:  null,   // '2026'/'2027'/'2028'
   cameFromExperience: false,
 };
 
@@ -1210,8 +1225,10 @@ function buildSeniorProps() {
 }
 
 function buildUniversalProps() {
-  const svc = state.service || 'family';
-  return {
+  const svc         = state.service || 'family';
+  const prefMonth   = state.prefMonth || '';   // e.g. '09'
+  const prefYear    = state.prefYear  || '';   // e.g. '2026'
+  const props = {
     '$phone_number_region': 'US',
     '$source':              'qualifier_embed',
     'tws_source':           'qualifier_embed',
@@ -1219,6 +1236,21 @@ function buildUniversalProps() {
     'tws_quiz_package':     'whiteGlove',
     'tws_result_url':       SERVICE_URLS[svc] || SERVICE_URLS.family,
   };
+  // Compute outreach date: 6 weeks (42 days) before the 1st of their preferred month
+  if (prefMonth && prefYear) {
+    const sessionStart  = new Date(parseInt(prefYear, 10), parseInt(prefMonth, 10) - 1, 1);
+    const outreachDate  = new Date(sessionStart.getTime() - 42 * 24 * 3600 * 1000);
+    // ISO string for Klaviyo flow trigger: YYYY-MM-DDTHH:mm:ss
+    const iso = outreachDate.getFullYear()
+      + '-' + String(outreachDate.getMonth() + 1).padStart(2, '0')
+      + '-' + String(outreachDate.getDate()).padStart(2, '0')
+      + 'T00:00:00';
+    props['tws_outreach_date']       = iso;
+    props['tws_preferred_session']   = prefYear + '-' + prefMonth;  // e.g. '2026-09'
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    props['tws_preferred_session_label'] = monthNames[parseInt(prefMonth,10) - 1] + ' ' + prefYear; // e.g. 'September 2026'
+  }
+  return props;
 }
 
 // Core Klaviyo submit — shared by all Klaviyo paths
@@ -1366,9 +1398,21 @@ function renderUnifiedForm(el) {
     '<div class="fork-row">' +
     '<span class="fork-label">When would you like us to reach out?</span>' +
     '<div class="fork-options">' +
-    '<button class="fork-btn selected" id="fork-now"   onclick="selectFork(\'now\')"   type="button">I\'m ready now</button>' +
+    '<button class="fork-btn selected" id="fork-now"   onclick="selectFork(\'now\'  )" type="button">I\'m ready now</button>' +
     '<button class="fork-btn"          id="fork-later" onclick="selectFork(\'later\')" type="button">Later / Just exploring</button>' +
-    '</div></div>';
+    '</div>' +
+    '<div class="month-picker" id="monthPicker">' +
+    '<select class="text-field" id="uf-month" onchange="checkUnifiedForm()" style="margin-bottom:0">' +
+    '<option value="" disabled selected>Preferred month</option>' +
+    '<option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option>' +
+    '</select>' +
+    '<select class="text-field" id="uf-year"  onchange="checkUnifiedForm()" style="margin-bottom:0">' +
+    '<option value="" disabled selected>Year</option>' +
+    '<option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option>' +
+    '</select>' +
+    '</div>' +
+    '<p class="fork-hint" id="forkHint">We\'ll reach out 6 weeks before your preferred month.</p>' +
+    '</div>';
 
   el.innerHTML =
     '<div class="qualified-screen">' +
@@ -1414,21 +1458,33 @@ function selectFork(val) {
   const btnLater = document.getElementById('fork-later');
   if (btnNow)   btnNow.classList.toggle('selected',   val === 'now');
   if (btnLater) btnLater.classList.toggle('selected', val === 'later');
+  // Show month/year picker and hint only when "later" is selected
+  const picker = document.getElementById('monthPicker');
+  const hint   = document.getElementById('forkHint');
+  if (picker) picker.classList.toggle('visible', val === 'later');
+  if (hint)   hint.classList.toggle('visible',   val === 'later');
   // Update submit button label
   const submit = document.getElementById('unifiedSubmitBtn');
-  if (submit) submit.textContent = val === 'later' ? 'Keep Me Posted \u2192' : 'Reserve Your Session \u2192';
+  if (submit) submit.textContent = val === 'later' ? 'Keep Me Posted →' : 'Reserve Your Session →';
+  checkUnifiedForm();
 }
 
 function checkUnifiedForm() {
   const first = (document.getElementById('uf-first') || {}).value?.trim() || '';
   const email = (document.getElementById('uf-email') || {}).value?.trim() || '';
   const phone = (document.getElementById('uf-phone') || {}).value?.trim() || '';
-  // Session always pre-filled — not required for button enablement
-  const valid = first.length > 0
+  const baseValid = first.length > 0
     && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
     && phone.replace(/\D/g, '').length >= 7;
+  // When fork = later, also require month + year selection
+  let forkValid = true;
+  if (forkChoice === 'later') {
+    const month = (document.getElementById('uf-month') || {}).value || '';
+    const year  = (document.getElementById('uf-year')  || {}).value || '';
+    forkValid = month !== '' && year !== '';
+  }
   const btn = document.getElementById('unifiedSubmitBtn');
-  if (btn) btn.disabled = !valid;
+  if (btn) btn.disabled = !(baseValid && forkValid);
 }
 async function submitUnified() {
   const btn      = document.getElementById('unifiedSubmitBtn');
@@ -1451,6 +1507,9 @@ async function submitUnified() {
   state.name      = (first + ' ' + last).trim();
   state.email     = email;
   state.phone     = phone;
+  // Capture preferred session month/year for universal Klaviyo outreach date
+  state.prefMonth = (document.getElementById('uf-month') || {}).value || '';
+  state.prefYear  = (document.getElementById('uf-year')  || {}).value || '';
 
   const sessionLabel = SERVICE_LABELS[session] || SERVICE_DISPLAY[session] || session;
   const svc          = state.service;
