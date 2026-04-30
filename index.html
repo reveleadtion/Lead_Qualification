@@ -1159,11 +1159,11 @@ function renderBudgetStep(content) {
   const svc = state.service;
   // Service-specific what's-included chips
   const baseChips = [
-    { label: 'Hair & Makeup',    hi: true  },
-    { label: 'Full Wardrobe',    hi: true  },
-    { label: 'Planning Consult', hi: false },
-    { label: 'Guided Posing',    hi: false },
-    { label: 'No Hidden Fees',   hi: false },
+    { label: 'Professional Hair & Makeup',    hi: true  },
+    { label: 'Heirloom Prints, Albums & Wall Art',    hi: true  },
+    { label: 'In-Home Planning & Design Consult', hi: false },
+    { label: 'Perfection Without Time Constraints',    hi: false },
+    { label: 'In-Studio & Outdoors',   hi: false },
   ];
   if (svc === 'maternity' || svc === 'boudoir') {
     baseChips.splice(1, 1, { label: 'Designer Gown Collection', hi: true });
