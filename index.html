@@ -929,7 +929,7 @@ function qualifyDueDate(dueDateStr) {
     // tws_window_opens_date = the date they\'ll be 20 weeks (anatomy scan ~= booking trigger).
     if (weeksAtOpen < 18) {
       const due         = new Date(dueDateStr + 'T12:00:00');
-      const windowOpens = new Date(due.getTime() - 20 * MS_WEEK); // due − 20 weeks = 20wk mark
+      const windowOpens = new Date(due.getTime() - 18 * MS_WEEK); // due − 18 weeks = 22wk mark (confirmed against spec)
       return {
         valid: 'tooEarly',
         reason: 'under18AtOpen',
@@ -968,12 +968,12 @@ function qualifyDueDate(dueDateStr) {
     // but likely a maternity client. Route to Klaviyo maternity list (same as maternity tooEarly).
     const weeksNow = weeksAlongOnDate(dueDateStr, today);
     if (weeksNow < 20) {
-      const windowOpens = new Date(due.getTime() - 20 * MS_WEEK);
+      const windowOpens = new Date(due.getTime() - 18 * MS_WEEK);
       return {
         valid: 'tooEarly',
         reason: 'newbornTooEarly',
         klavWindowOpens: windowOpens.toISOString().slice(0, 10),
-        noteHtml: 'Your baby is not arriving near our current newborn window yet. We will add you to our list and reach out around your anatomy scan. Most moms at this stage love our maternity & newborn combination offerings!'
+        noteHtml: 'Your baby is not arriving near our current newborn window, but you may be a great fit for a maternity session. We will add you to our list and reach out around your anatomy scan.'
       };
     }
 
@@ -1043,8 +1043,7 @@ function render() {
       renderMaternityUnmatch(content); return;
     }
 
-    // 4. Early maternity (tooEarly) — only reaches here AFTER price + contact steps passed
-    //    Route to Klaviyo capture instead of Sprout
+    // 4. tooEarly (maternity, boudoir, or newborn) — route to Klaviyo maternity capture
     if (dv === 'tooEarly') { renderKlavCapture(content); return; }
 
     // 5. Senior routing — driven by grad year choice
@@ -1328,8 +1327,10 @@ const SERVICE_DISPLAY = {
 // these skip the now/later fork on the unified form
 function hasFixedRouting() {
   const svc = state.service;
-  // Maternity tooEarly → Klaviyo maternity always
+  // Maternity/boudoir tooEarly → Klaviyo maternity, no fork
   if ((svc === 'maternity' || svc === 'boudoir') && state.dueDateValid === 'tooEarly') return true;
+  // Newborn tooEarly → Klaviyo maternity (same list), no fork
+  if (svc === 'newborn' && state.dueDateValid === 'tooEarly') return true;
   // Senior with grad year 'later' (2028+) → always Klaviyo, no fork
   if (svc === 'senior' && state.gradYear === 'later') return true;
   // Senior 'soon' with specific timing month → Sprout, no fork
@@ -1360,7 +1361,7 @@ function buildMaternityProps() {
     'tws_week_at_signup':    weeksNow,
     'tws_quiz_status':       'early',
     'tws_quiz_package':      'whiteGlove',
-    'tws_result_url':        SERVICE_URLS[state.service] || SERVICE_URLS.maternity,
+    'tws_result_url':        SERVICE_URLS.maternity,  // always maternity URL even for newborn tooEarly
   };
 }
 
@@ -1536,16 +1537,20 @@ function getResultCopy() {
 function buildMonthPickerHtml() {
   const MONTH_NAMES = ['January','February','March','April','May','June',
                        'July','August','September','October','November','December'];
-  const MIN_WEEKS   = 8;
-  const today       = new Date(); today.setHours(0,0,0,0);
+  const MIN_WEEKS = 8;
+  const today     = new Date(); today.setHours(0,0,0,0);
 
-  // Build a single combined select: "Month Year" options
-  // Only include months where the 1st of the month is >= 8 weeks from today
+  // Floor: August 2026 is the absolute earliest available session month.
+  // After that, use 8-week rolling minimum from today.
+  const FLOOR = new Date(2026, 7, 1); // August 1, 2026
+  const minDate = FLOOR > today
+    ? FLOOR                                                     // before Aug 2026: show Aug 2026 first
+    : new Date(today.getTime() + MIN_WEEKS * 7 * 24 * 3600 * 1000); // after Aug 2026: 8wks from today
+
   const opts = ['<option value="" disabled selected>Select a month &amp; year</option>'];
-  for (let offset = 0; offset < 24; offset++) {
+  for (let offset = 0; offset < 30; offset++) {
     const d = new Date(today.getFullYear(), today.getMonth() + offset, 1);
-    const weeksUntil = (d - today) / (7 * 24 * 3600 * 1000);
-    if (weeksUntil >= MIN_WEEKS) {
+    if (d >= new Date(minDate.getFullYear(), minDate.getMonth(), 1)) {
       const m   = String(d.getMonth() + 1).padStart(2, '0');
       const y   = String(d.getFullYear());
       const lbl = MONTH_NAMES[d.getMonth()] + ' ' + y;
@@ -1705,8 +1710,8 @@ async function submitUnified() {
   // 2. Everyone else: fork choice drives Sprout (now) vs Klaviyo Universal (later)
   let dest = 'sprout';
 
-  if ((svc === 'maternity' || svc === 'boudoir') && dv === 'tooEarly') {
-    dest = 'klaviyo_maternity';
+  if ((svc === 'maternity' || svc === 'boudoir' || svc === 'newborn') && dv === 'tooEarly') {
+    dest = 'klaviyo_maternity';   // newborn tooEarly → same maternity Klaviyo list
   } else if (svc === 'senior' && state.gradYear === 'later') {
     dest = 'klaviyo_senior';
   } else if (!hasFixedRouting() && forkChoice === 'later') {
