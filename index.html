@@ -2297,6 +2297,11 @@ if (window.self !== window.top || new URLSearchParams(window.location.search).ha
 //  INIT
 // =====================================================================
 try {
+  const _startParam = new URLSearchParams(window.location.search).get('start');
+  if (_startParam === '1') {
+    const active = activeSteps();
+    currentStep = active[0];
+  }
   render();
 } catch(e) {
   console.error('TWS Qualifier render error:', e);
