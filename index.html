@@ -1352,7 +1352,10 @@ async function doSproutSubmit(first, last, email, phone, session, notes, statusE
     body: JSON.stringify({ first, last, email, phone, session, notes })
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Sprout error');
+  if (!res.ok) {
+    console.error('Sprout submission failed:', data);
+    throw new Error(data.error || data.detail || ('Sprout error ' + res.status));
+  }
 
   // Success — replace form with confirmation
   const form = document.getElementById('unifiedForm');
@@ -1480,27 +1483,61 @@ function populateOfferItems() {
 }
 
 // ── Loop helper — switch to a suggested service and restart from budget
+// ── Loop helper — switch service, preserve date, re-qualify ─────────
+// The customer's due date is a fact about them, not the service. When they
+// loop from one pregnancy service to another, we keep the date and re-run
+// the qualification under the new service's rules. If the date qualifies
+// for the new service, skip the duedate step and proceed to budget.
 function loopToService(newService) {
-  state.service         = newService;
-  state.dueDate         = null;
-  state.dueDateValid    = null;
-  state.dueDateReason   = null;
-  state.dueDateNote     = null;
-  state.klavWindowOpens = null;
-  state.timing          = null;
-  state.gradYear        = null;
-  state.budget          = null;
+  // Preserve the dueDate across the loop — it's the same fact about the customer
+  const preservedDate = state.dueDate;
+
+  state.service           = newService;
+  state.dueDateValid      = null;
+  state.dueDateReason     = null;
+  state.dueDateNote       = null;
+  state.klavWindowOpens   = null;
+  state.timing            = null;
+  state.gradYear          = null;
+  state.budget            = null;
   state.cameFromExperience = false;
 
-  // Pregnancy services need the due date question to qualify correctly
-  if (['maternity','boudoir','newborn'].includes(newService)) {
-    currentStep = STEPS.findIndex(s => s.id === 'duedate');
-  } else {
-    // Non-pregnancy: go to timing step
-    currentStep = STEPS.findIndex(s => s.id === 'timing');
+  // For pregnancy → pregnancy loops, re-qualify the date under new service rules
+  if (['maternity','boudoir','newborn'].includes(newService) && preservedDate) {
+    state.dueDate = preservedDate;
+    const q = qualifyDueDate(preservedDate);
+    state.dueDateValid    = q.valid;
+    state.dueDateReason   = q.reason || null;
+    state.klavWindowOpens = q.klavWindowOpens || null;
+    state.dueDateNote     = q.noteHtml || '';
+
+    if (q.valid === 'unqualified') {
+      // The date doesn't work for this service either — show next unmatch
+      currentStep = STEPS.length;
+      render();
+      return;
+    }
+    // Date qualifies — skip duedate step, go to budget so they don't re-enter
+    currentStep = STEPS.findIndex(s => s.id === 'budget');
+    render();
+    return;
   }
+
+  // For pregnancy services with no preserved date — go to duedate step
+  if (['maternity','boudoir','newborn'].includes(newService)) {
+    state.dueDate = null;
+    currentStep = STEPS.findIndex(s => s.id === 'duedate');
+    render();
+    return;
+  }
+
+  // Non-pregnancy services (family, branding, beauty, senior) — clear date,
+  // go to timing step. The date isn't relevant for these.
+  state.dueDate = null;
+  currentStep = STEPS.findIndex(s => s.id === 'timing');
   render();
 }
+
 
 
 // ── Maternity unmatch — offer Newborn + Family ────────────────────
