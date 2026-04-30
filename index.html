@@ -1183,8 +1183,9 @@ function renderDueDateStep(content, step) {
       <p class="question-hint">${hint}</p>
       <div class="date-field-wrap">
         <input type="date" class="date-field" id="dateInput"
-          value="${state.dueDate || ''}"
-          onchange="handleDueDateChange()">
+         value="${state.dueDate || ''}"
+         placeholder="Click to select your due date"
+         onchange="handleDueDateChange()">
       </div>
       <div id="dateNote" style="margin-top:10px">${savedNote}</div>
       <p class="val-msg" id="valMsg"></p>
@@ -1687,11 +1688,11 @@ function renderUnifiedForm(el) {
     spotBadge +
     '<div class="sprout-form" id="unifiedForm">' +
     '<div class="sprout-form-row">' +
-    '<input type="text"  class="text-field" id="uf-first" placeholder="First name"     oninput="checkUnifiedForm()" style="margin-bottom:0">' +
-    '<input type="text"  class="text-field" id="uf-last"  placeholder="Last name"      oninput="checkUnifiedForm()" style="margin-bottom:0">' +
+    '<input type="text"  class="text-field" id="uf-first" placeholder="First name"  autocomplete="given-name"   oninput="checkUnifiedForm()" style="margin-bottom:0">' +
+    '<input type="text"  class="text-field" id="uf-last"  placeholder="Last name"   autocomplete="family-name"   oninput="checkUnifiedForm()" style="margin-bottom:0">' +
     '</div>' +
-    '<input type="email" class="text-field" id="uf-email" placeholder="Email address"  oninput="checkUnifiedForm()">' +
-    '<input type="tel"   class="text-field" id="uf-phone" placeholder="Phone number"   oninput="checkUnifiedForm()">' +
+    '<input type="email" class="text-field" id="uf-email" placeholder="Email address" autocomplete="email" oninput="checkUnifiedForm()">' +
+    '<input type="tel"   class="text-field" id="uf-phone" placeholder="Phone number"  autocomplete="tel" oninput="checkUnifiedForm()">' +
     (isPregnancySvc
       ? '<input type="hidden" id="uf-session" value="' + svc + '">'
       : '<select class="text-field" id="uf-session" onchange="checkUnifiedForm()">' + svcOptions + '</select>'
