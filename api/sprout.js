@@ -2,12 +2,11 @@
 // Vercel Serverless Function — proxies lead submission to Sprout Studio API.
 // Set SPROUT_API_KEY in Vercel → Settings → Environment Variables.
 //
-// Sprout's lead/new endpoint accepts label-X / field-X pairs that map to
-// the lead form's configured fields. Standard field names per Sprout's
-// documentation: first_name, last_name, email, phone, event_type, remark.
+// IMPORTANT: Sprout's lead/new endpoint expects application/x-www-form-urlencoded
+// (form-encoded), NOT JSON. Their PHP example uses http_build_query which sends
+// form data. Sending JSON causes a 500 from Sprout.
 
 export default async function handler(req, res) {
-  // CORS — allow your domain + Vercel previews + localhost
   const origin = req.headers.origin || '';
   const allowed = [
     'https://contact.twowildsoulsphotography.com',
@@ -30,14 +29,10 @@ export default async function handler(req, res) {
   const apiKey = process.env.SPROUT_API_KEY;
   if (!apiKey) {
     console.error('[sprout-proxy] SPROUT_API_KEY env var not set');
-    return res.status(500).json({
-      error:  'Server configuration error',
-      detail: 'SPROUT_API_KEY missing from environment',
-    });
+    return res.status(500).json({ error: 'Server configuration error', detail: 'SPROUT_API_KEY missing' });
   }
 
-  // Parse body — Vercel auto-parses JSON when content-type is application/json
-  const body = req.body || {};
+  const body    = req.body || {};
   const first   = (body.first   || '').toString().trim();
   const last    = (body.last    || '').toString().trim();
   const email   = (body.email   || '').toString().trim();
@@ -46,70 +41,55 @@ export default async function handler(req, res) {
   const notes   = (body.notes   || '').toString().trim();
 
   if (!first || !email) {
-    return res.status(400).json({
-      error:  'Missing required fields',
-      detail: 'first name and email are required',
-    });
+    return res.status(400).json({ error: 'Missing required fields', detail: 'first and email required' });
   }
 
-  // Build Sprout payload using standard field names from their PHP example
-  const payload = {
-    apikey:              apiKey,
-    'label-first_name': 'First Name',
-    'field-first_name':  first,
-    'label-last_name':  'Last Name',
-    'field-last_name':   last,
-    'label-email':      'Email',
-    'field-email':       email,
-    'label-phone':      'Phone',
-    'field-phone':       phone,
-    'label-event_type': 'Session Type',
-    'field-event_type':  session,
-    'label-remark':     'Additional Information',
-    'field-remark':      notes,
-  };
+  // Build as URLSearchParams — Sprout expects form-encoded data (like PHP http_build_query)
+  const params = new URLSearchParams();
+  params.append('apikey',           apiKey);
+  params.append('label-first_name', 'First Name');
+  params.append('field-first_name', first);
+  params.append('label-last_name',  'Last Name');
+  params.append('field-last_name',  last);
+  params.append('label-email',      'Email');
+  params.append('field-email',      email);
+  params.append('label-phone',      'Phone Number');
+  params.append('field-phone',      phone);
+  params.append('label-event_type', 'Session Type');
+  params.append('field-event_type', session);
+  params.append('label-remark',     'Additional Information');
+  params.append('field-remark',     notes);
 
   try {
     const sproutRes = await fetch('https://api.sproutstudio.com/lead/new', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    params.toString(),
     });
 
     const responseText = await sproutRes.text();
     let parsed = null;
     try { parsed = JSON.parse(responseText); } catch { /* not JSON */ }
 
-    // Log everything for debugging — visible in Vercel function logs
     console.log('[sprout-proxy] status:', sproutRes.status);
     console.log('[sprout-proxy] response:', responseText.substring(0, 500));
 
     if (!sproutRes.ok) {
       return res.status(502).json({
-        error:  'Sprout API rejected the request',
+        error:  'Sprout API error',
         status: sproutRes.status,
         detail: parsed || responseText.substring(0, 500),
       });
     }
 
-    // Sprout returns 200 even on logical failures — check the body
     if (parsed && parsed.success === false) {
-      return res.status(502).json({
-        error:  'Sprout returned failure',
-        detail: parsed,
-      });
+      return res.status(502).json({ error: 'Sprout returned failure', detail: parsed });
     }
 
-    return res.status(200).json({
-      success: true,
-      data: parsed || { raw: responseText },
-    });
+    return res.status(200).json({ success: true, data: parsed || { raw: responseText } });
 
   } catch (err) {
     console.error('[sprout-proxy] fetch error:', err);
-    return res.status(500).json({
-      error:  'Failed to reach Sprout API',
-      detail: err.message,
-    });
+    return res.status(500).json({ error: 'Failed to reach Sprout API', detail: err.message });
   }
 }
