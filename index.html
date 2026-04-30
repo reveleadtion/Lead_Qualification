@@ -229,21 +229,17 @@ main {
 
 /* ── Investment / Budget step ───────────────────────────────────────── */
 .investment-card {
-  background: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--gold);
   border-radius: 6px;
   padding: 24px 20px 20px;
   margin-bottom: 20px;
   position: relative;
-  overflow: hidden;
-}
-.investment-card::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, var(--gold) 0%, rgba(168,146,90,0.3) 100%);
 }
 .invest-eyebrow {
   font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
-  color: rgba(245,243,239,0.45); margin-bottom: 14px; display: block;
+  color: var(--gold); margin-bottom: 14px; display: block;
 }
 .invest-numbers {
   display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px;
@@ -252,38 +248,40 @@ main {
   font-family: 'Cormorant Garamond', serif;
   font-size: clamp(44px, 12vw, 60px);
   font-weight: 300; line-height: 1;
-  color: var(--gold); letter-spacing: -0.01em;
+  color: var(--text); letter-spacing: -0.01em;
 }
 .invest-label {
   font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
-  color: rgba(245,243,239,0.45);
+  color: var(--text2);
 }
 .invest-avg {
-  font-size: 12px; color: rgba(245,243,239,0.5);
-  margin-bottom: 18px; font-style: italic;
+  font-size: 13px; color: var(--text2);
+  margin-bottom: 18px;
 }
-.invest-avg strong { color: rgba(245,243,239,0.75); font-weight: 400; }
+.invest-avg strong { color: var(--text); font-weight: 500; }
 .invest-includes {
   display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0;
 }
 .invest-chip {
-  font-size: 10.5px; letter-spacing: 0.06em;
-  border: 1px solid rgba(168,146,90,0.35);
-  color: rgba(245,243,239,0.7);
-  padding: 4px 10px; border-radius: 20px;
+  font-size: 10.5px; letter-spacing: 0.04em;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  padding: 5px 11px; border-radius: 20px;
+  background: var(--bg);
 }
 .invest-chip.highlight {
-  background: rgba(168,146,90,0.15);
-  border-color: rgba(168,146,90,0.5);
+  background: var(--gold-dim);
+  border-color: var(--gold-bdr);
   color: var(--gold);
+  font-weight: 500;
 }
 .invest-divider {
-  height: 1px; background: rgba(245,243,239,0.08);
+  height: 1px; background: var(--border);
   margin: 18px 0 16px;
 }
 .invest-note {
-  font-size: 11px; color: rgba(245,243,239,0.38);
-  font-style: italic; text-align: center; letter-spacing: 0.03em;
+  font-size: 11.5px; color: var(--text2);
+  font-style: italic; text-align: center;
 }
 .budget-choices { display: flex; flex-direction: column; gap: 10px; }
 .budget-btn {
@@ -955,18 +953,30 @@ function qualifyDueDate(dueDateStr) {
 
   if (service === 'newborn') {
     const due      = new Date(dueDateStr + 'T12:00:00');
-    // Newborn window: first 14 days after birth.
-    // We\'re scheduling only for babies born last week of July (July 25–31) or very early Aug.
-    // Must reach out at least 2 weeks before due date.
-    const july25   = new Date(firstAvail.getFullYear(), 6, 25); // July 25
-    const aug7     = new Date(firstAvail.getFullYear(), 7, 7);  // Aug 7 (early arrival buffer)
-    const outreachDeadline = new Date(july25.getTime() - 14 * 24 * 3600 * 1000); // 2wks before July 25
+    const july25   = new Date(firstAvail.getFullYear(), 6, 25);
+    const aug7     = new Date(firstAvail.getFullYear(), 7, 7);
+    const outreachDeadline = new Date(july25.getTime() - 14 * 24 * 3600 * 1000);
 
+    // Good newborn window: due July 25-Aug 7, must reach out by July 11
     if (due >= july25 && due <= aug7) {
       return today <= outreachDeadline
         ? { valid: 'good' }
         : { valid: 'unqualified', reason: 'tooLateOutreach' };
     }
+
+    // tooEarly: mother is <20 wks pregnant today — not near our newborn window
+    // but likely a maternity client. Route to Klaviyo maternity list (same as maternity tooEarly).
+    const weeksNow = weeksAlongOnDate(dueDateStr, today);
+    if (weeksNow < 20) {
+      const windowOpens = new Date(due.getTime() - 20 * MS_WEEK);
+      return {
+        valid: 'tooEarly',
+        reason: 'newbornTooEarly',
+        klavWindowOpens: windowOpens.toISOString().slice(0, 10),
+        noteHtml: 'Your baby is not arriving near our current newborn window, but you may be a great fit for a maternity session. We will add you to our list and reach out around your anatomy scan.'
+      };
+    }
+
     return { valid: 'unqualified', reason: due < july25 ? 'beforeJuly' : 'afterAug' };
   }
 
@@ -1016,6 +1026,10 @@ function render() {
     const service = state.service;
     const budg    = state.budget;
     const dv      = state.dueDateValid;
+
+    // 0. Safety gate — if budget is not set or not 'yes'/'learn'/'no', something bypassed
+    //    the investment step. Route back to budget so they see the price.
+    if (!budg) { currentStep = STEPS.findIndex(s => s.id === 'budget'); render(); return; }
 
     // 1. Budget declined — unmatch + redirect
     if (budg === 'no') { renderBudgetUnmatch(content); return; }
@@ -1159,20 +1173,22 @@ function renderBudgetStep(content) {
   const svc = state.service;
   // Service-specific what's-included chips
   const baseChips = [
-    { label: 'Professional Hair & Makeup',    hi: true  },
-    { label: 'Heirloom Prints, Albums & Wall Art',    hi: true  },
-    { label: 'In-Home Planning & Design Consult', hi: false },
-    { label: 'Perfection Without Time Constraints',    hi: false },
-    { label: 'In-Studio & Outdoors',   hi: false },
+    { label: 'Professional Hair & Makeup',        hi: true  },
+    { label: 'Heirloom Prints, Albums & Wall Art', hi: true  },
+    { label: 'In-Home Planning & Design Consult',  hi: false },
+    { label: 'Perfection Without Time Constraints',hi: false },
+    { label: 'In-Studio & Outdoors',               hi: false },
   ];
+  // Swap index 2 (Planning Consult) for service-specific chip, add extras
   if (svc === 'maternity' || svc === 'boudoir') {
-    baseChips.splice(1, 1, { label: 'Designer Gown Collection', hi: true });
+    baseChips.splice(2, 0, { label: 'Designer Maternity Gown Collection', hi: true });
   }
   if (svc === 'newborn') {
-    baseChips.splice(1, 1, { label: 'Newborn Props & Wraps', hi: true });
+    baseChips.splice(2, 0, { label: 'Newborn Props & Wraps Provided', hi: true });
   }
   if (svc === 'senior') {
-    baseChips.push({ label: "Cap & Gown Session Included", hi: false });
+    baseChips.push({ label: 'Cap & Gown Session — Following Year', hi: false });
+    baseChips.push({ label: 'Family Portraits Add-On Available',   hi: false });
   }
 
   const chips = baseChips.map(function(c) {
@@ -1449,8 +1465,8 @@ async function submitToKlaviyo(listId, properties, statusEl, successMsg) {
         const div = document.createElement('div');
         div.className = 'success-screen';
         div.innerHTML = '<span class="success-icon">✓</span>'
-          + "<h2 class=\"success-headline\">You're on our list.<br><em>We'll be in touch.</em></h2>"
-          + "<p class=\"success-body\">" + (successMsg || "We'll reach out when the time is right.") + "</p>";
+          + "<h2 class=\"success-headline\">We got you.<br><em>You'll hear from us soon.</em></h2>"
+          + "<p class=\"success-body\">Your information is saved. We'll send you a confirmation shortly, and we'll be back in touch when we're ready to book. No need to do anything else.</p>";
         form.parentNode.replaceChild(div, form);
       }
     } else {
@@ -1516,6 +1532,40 @@ function getResultCopy() {
   return { eyebrow: 'Reserve Your Session', headline: 'We\'d love to work with you.', body, spot };
 }
 
+// ── Dynamic month picker — only shows months >=8 weeks from today ────
+function buildMonthPickerHtml() {
+  const MONTH_NAMES = ['January','February','March','April','May','June',
+                       'July','August','September','October','November','December'];
+  const MIN_WEEKS   = 8;
+  const today       = new Date(); today.setHours(0,0,0,0);
+
+  // Build a single combined select: "Month Year" options
+  // Only include months where the 1st of the month is >= 8 weeks from today
+  const opts = ['<option value="" disabled selected>Select a month &amp; year</option>'];
+  for (let offset = 0; offset < 24; offset++) {
+    const d = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+    const weeksUntil = (d - today) / (7 * 24 * 3600 * 1000);
+    if (weeksUntil >= MIN_WEEKS) {
+      const m   = String(d.getMonth() + 1).padStart(2, '0');
+      const y   = String(d.getFullYear());
+      const lbl = MONTH_NAMES[d.getMonth()] + ' ' + y;
+      opts.push('<option value="' + m + '|' + y + '">' + lbl + '</option>');
+    }
+  }
+
+  return '<select class="text-field" id="uf-monthyear" onchange="onMonthYearChange()" style="margin-bottom:0;grid-column:1/-1">'
+    + opts.join('')
+    + '</select>';
+}
+
+function onMonthYearChange() {
+  const sel = (document.getElementById('uf-monthyear') || {}).value || '';
+  const parts = sel.split('|');
+  // Store month/year in hidden fields so submitUnified can read them
+  // (uf-month and uf-year are now virtual — we parse from the combined select)
+  checkUnifiedForm();
+}
+
 // The unified form — called by all qualified result paths
 function renderUnifiedForm(el) {
   document.getElementById('progressShell').style.display = 'none';
@@ -1543,16 +1593,9 @@ function renderUnifiedForm(el) {
     '<button class="fork-btn"          id="fork-later" onclick="selectFork(\'later\')" type="button">Later / Just exploring</button>' +
     '</div>' +
     '<div class="month-picker" id="monthPicker">' +
-    '<select class="text-field" id="uf-month" onchange="checkUnifiedForm()" style="margin-bottom:0">' +
-    '<option value="" disabled selected>Preferred month</option>' +
-    '<option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option>' +
-    '</select>' +
-    '<select class="text-field" id="uf-year"  onchange="checkUnifiedForm()" style="margin-bottom:0">' +
-    '<option value="" disabled selected>Year</option>' +
-    '<option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option>' +
-    '</select>' +
+    buildMonthPickerHtml() +
     '</div>' +
-    '<p class="fork-hint" id="forkHint">We\'ll reach out 6 weeks before your preferred month.</p>' +
+    '<p class="fork-hint" id="forkHint">We book 4–8 weeks in advance — first available month is highlighted.</p>' +
     '</div>';
 
   el.innerHTML =
@@ -1617,12 +1660,11 @@ function checkUnifiedForm() {
   const baseValid = first.length > 0
     && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
     && phone.replace(/\D/g, '').length >= 7;
-  // When fork = later, also require month + year selection
+  // When fork = later, require a valid month/year selection (>= 8 weeks out)
   let forkValid = true;
   if (forkChoice === 'later') {
-    const month = (document.getElementById('uf-month') || {}).value || '';
-    const year  = (document.getElementById('uf-year')  || {}).value || '';
-    forkValid = month !== '' && year !== '';
+    const sel = (document.getElementById('uf-monthyear') || {}).value || '';
+    forkValid = sel !== '' && sel.includes('|');
   }
   const btn = document.getElementById('unifiedSubmitBtn');
   if (btn) btn.disabled = !(baseValid && forkValid);
@@ -1648,9 +1690,11 @@ async function submitUnified() {
   state.name      = (first + ' ' + last).trim();
   state.email     = email;
   state.phone     = phone;
-  // Capture preferred session month/year for universal Klaviyo outreach date
-  state.prefMonth = (document.getElementById('uf-month') || {}).value || '';
-  state.prefYear  = (document.getElementById('uf-year')  || {}).value || '';
+  // Parse combined month/year select for Klaviyo outreach date
+  const _mysel = (document.getElementById('uf-monthyear') || {}).value || '';
+  const _myparts = _mysel.split('|');
+  state.prefMonth = _myparts[0] || '';
+  state.prefYear  = _myparts[1] || '';
 
   const sessionLabel = SERVICE_LABELS[session] || SERVICE_DISPLAY[session] || session;
   const svc          = state.service;
@@ -2108,6 +2152,9 @@ function goBack() {
   if (currentStep >= STEPS.length) {
     const budgetIdx = STEPS.findIndex(s => s.id === 'budget');
     currentStep = budgetIdx;
+    // Clear budget so the investment step requires a fresh conscious selection —
+    // prevents any path where state carries through without seeing the investment card
+    state.budget = null;
     state.cameFromExperience = false;
     render(); return;
   }
