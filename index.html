@@ -762,7 +762,7 @@ const STEPS = [
   },
   { id: 'gradyear', type: 'options', label: 'What year does your senior graduate?',
     hint: 'This helps us find the right spot on our calendar for you.',
-    showIf: () => state.service === 'senior' && state.timing === 'later',
+    showIf: () => state.service === 'senior',
     options: [
       { value: 'spring2026', label: 'Spring 2026', sub: 'Senior session this summer' },
       { value: 'spring2027', label: 'Spring 2027', sub: 'Session in summer 2026' },
@@ -945,14 +945,17 @@ function render() {
     //    Route to Klaviyo capture instead of Sprout
     if (dv === 'tooEarly') { renderKlavCapture(content); return; }
 
-    // 5. Senior 2028+ → Klaviyo senior waitlist
-    if (service === 'senior' && state.timing === 'later' && state.gradYear &&
-        parseInt(state.gradYear.replace('spring',''), 10) >= 2028) {
-      renderKlavSenior(content); return;
+    // 5. Senior routing — driven by grad year, not timing
+    if (service === 'senior' && state.gradYear) {
+      const yr = parseInt(state.gradYear.replace('spring','').replace('fall',''), 10);
+      if (yr >= 2028) {
+        renderKlavSenior(content); return;   // 2028+ → Klaviyo waitlist
+      }
+      // 2026/2027 → Sprout (falls through to step 7)
     }
 
-    // 6. Later/flexible timing (non-pregnancy, non-senior-waitlist) → Klaviyo universal
-    if (state.timing === 'later') {
+    // 6. Later/flexible timing (non-senior, non-pregnancy) → Klaviyo universal
+    if (state.timing === 'later' && service !== 'senior') {
       renderKlavUniversal(content); return;
     }
 
@@ -1143,15 +1146,14 @@ const SERVICE_DISPLAY = {
   beauty:    'Beauty / Milestone',
 };
 
-// Returns true for services where timing is already determined by the form
-// — these skip the now/later fork and always route to their fixed destination
+// Returns true for services where routing is fully determined by existing state —
+// these skip the now/later fork on the unified form
 function hasFixedRouting() {
   const svc = state.service;
-  // Maternity tooEarly → Klaviyo always
+  // Maternity tooEarly → Klaviyo maternity always
   if ((svc === 'maternity' || svc === 'boudoir') && state.dueDateValid === 'tooEarly') return true;
-  // Senior 2028+ → Klaviyo always
-  if (svc === 'senior' && state.timing === 'later' &&
-      parseInt((state.gradYear || '').replace('spring','').replace('fall',''), 10) >= 2028) return true;
+  // Senior with grad year → always routes by grad year (Sprout or Klaviyo), no fork
+  if (svc === 'senior' && state.gradYear) return true;
   // Newborn good → Sprout always
   if (svc === 'newborn') return true;
   return false;
@@ -1318,8 +1320,8 @@ async function submitUnified() {
 
   if ((svc === 'maternity' || svc === 'boudoir') && dv === 'tooEarly') {
     dest = 'klaviyo_maternity';
-  } else if (svc === 'senior' && state.timing === 'later' &&
-             parseInt((state.gradYear || '').replace('spring','').replace('fall',''), 10) >= 2028) {
+  } else if (svc === 'senior' && state.gradYear &&
+             parseInt((state.gradYear).replace('spring','').replace('fall',''), 10) >= 2028) {
     dest = 'klaviyo_senior';
   } else if (!hasFixedRouting() && forkChoice === 'later') {
     dest = 'klaviyo_universal';
@@ -1599,12 +1601,17 @@ function renderNewbornUnmatch(content) {
   document.getElementById('progressShell').style.display = 'none';
   document.getElementById('bottomNav').style.display     = 'none';
 
-  // Only show maternity card if they could still be in window (18-32 wks today)
+  // Only show maternity card if maternity would ACTUALLY QUALIFY —
+  // must be 18-32 wks today AND 18-32 wks at firstAvailableDate (Aug 1).
+  // If the date fails maternity rules, showing the card creates an infinite loop.
   let showMaternity = false;
   if (state.dueDate) {
-    const today = new Date(); today.setHours(0,0,0,0);
-    const wks = weeksAlongOnDate(state.dueDate, today);
-    showMaternity = wks >= 18 && wks <= 32;
+    const _today = new Date(); _today.setHours(0,0,0,0);
+    const _fa    = firstAvailableDate();
+    const _wNow  = weeksAlongOnDate(state.dueDate, _today);
+    const _wOpen = weeksAlongOnDate(state.dueDate, _fa);
+    // Maternity qualifies: 18-32 wks today, and 18-32 wks at first available date
+    showMaternity = _wNow >= 18 && _wNow <= 32 && _wOpen >= 18 && _wOpen <= 32;
   }
 
   const maternityCard = !showMaternity ? '' :
