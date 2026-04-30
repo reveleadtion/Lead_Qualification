@@ -302,6 +302,26 @@ main {
 .budget-btn-label { display: block; font-size: 14.5px; font-weight: 400; color: var(--text); line-height: 1.3; }
 .budget-btn-sub   { display: block; font-size: 11.5px; color: var(--text2); margin-top: 3px; }
 
+.start-over-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 10px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  margin-top: 16px;
+  font-family: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(26,26,24,0.2);
+  transition: color 0.2s;
+}
+.start-over-btn:hover { color: var(--text); }
+
 /* ── Text / Email / Tel inputs ───────────────────────────────────────── */
 .text-field-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
 .text-field {
@@ -333,6 +353,27 @@ textarea.text-field {
 }
 /* Fork — now/later selection */
 .fork-row { margin: 4px 0 2px; }
+.start-over-wrap {
+  text-align: center;
+  padding: 16px 0 4px;
+}
+.start-over-btn {
+  background: none;
+  border: none;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text2);
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 4px;
+  transition: color 0.2s;
+  font-family: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.start-over-btn:hover { color: var(--text); }
+
 .month-picker {
   display: none;
   gap: 10px;
@@ -914,18 +955,16 @@ function qualifyDueDate(dueDateStr) {
     const weeksNow    = weeksAlongOnDate(dueDateStr, today);
     const weeksAtOpen = weeksAlongOnDate(dueDateStr, firstAvail);
 
-    // Hard unqualified gates — check BEFORE the tooEarly soft gate:
-
-    // Past 32 weeks today — cannot photograph at any maternity stage
+    // Gate 1: Past 32 weeks today — too far along
     if (weeksNow >= 32) return { valid: 'unqualified', reason: 'past32' };
 
-    // Would be past 32 weeks by Aug 1 AND already past tooEarly threshold —
-    // The window has effectively passed for this season
-    if (weeksAtOpen > 32) return { valid: 'unqualified', reason: 'tooEarlyDue' };
+    // Gate 2: Would be 32+ weeks at Aug 1 — outside our shooting window
+    // This catches Sept 7 (34.6wks at Aug1), Aug 15, etc.
+    if (weeksAtOpen >= 32) return { valid: 'unqualified', reason: 'tooEarlyDue' };
 
-    // Under 22 weeks today — mom isn't emotionally invested yet.
-    // Only applies AFTER the unqualified gates so we don't capture
-    // people who would be past 32 wks at Aug 1 (genuinely can't serve them).
+    // Gate 3: Under 22 weeks today — too early, mom not ready to engage
+    // Only fires for dates that PASS gate 2 (i.e. wOpen < 32)
+    // e.g. Dec 15 (7wks today, 20.5wks at Aug1)
     if (weeksNow < 22) {
       const due = new Date(dueDateStr + 'T12:00:00');
       const windowOpens = new Date(due.getTime() - 18 * MS_WEEK);
@@ -937,12 +976,12 @@ function qualifyDueDate(dueDateStr) {
       };
     }
 
-    // 22-32 weeks today AND in window at Aug 1 — fully qualified for Sprout
+    // Gate 4: 22-32 weeks today AND < 32 at Aug 1 — qualified for Sprout
     const due = new Date(dueDateStr + 'T12:00:00');
     const sessionStart = new Date(due.getTime() - 32 * MS_WEEK);
     let noteHtml = '';
     if (sessionStart < firstAvail) {
-      noteHtml = 'We\'re available starting <strong>' + formatDate(firstAvail) + '</strong> \u2014 your session window extends well into our available dates.';
+      noteHtml = 'We\'re available starting <strong>' + formatDate(firstAvail) + '</strong> \u2014 your window extends well into our available dates.';
     }
     return { valid: 'good', noteHtml };
   }
@@ -950,33 +989,28 @@ function qualifyDueDate(dueDateStr) {
 
   if (service === 'newborn') {
     const due    = new Date(dueDateStr + 'T12:00:00');
-    const july25 = new Date(firstAvail.getFullYear(), 6, 25);
-    const aug7   = new Date(firstAvail.getFullYear(), 7, 7);
-    const outreachDeadline = new Date(july25.getTime() - 14 * 24 * 3600 * 1000);
-
-    // Good: baby due July 25-Aug 7 AND we have enough lead time
-    if (due >= july25 && due <= aug7) {
-      return today <= outreachDeadline
-        ? { valid: 'good' }
-        : { valid: 'unqualified', reason: 'tooLateOutreach' };
-    }
-
-    // Under 22 weeks pregnant today — too early. Route to Klaviyo maternity list.
-    // Same logic as maternity tooEarly: reach out near anatomy scan.
     const weeksNow = weeksAlongOnDate(dueDateStr, today);
+    // New cutoff: July 19 (more flex time than July 25)
+    const july19 = new Date(firstAvail.getFullYear(), 6, 19);
+
+    // Under 22 weeks today — too early. Capture on Klaviyo maternity list.
     if (weeksNow < 22) {
       const windowOpens = new Date(due.getTime() - 18 * MS_WEEK);
       return {
         valid: 'tooEarly',
         reason: 'newbornTooEarly',
         klavWindowOpens: windowOpens.toISOString().slice(0, 10),
-        noteHtml: 'Your baby isn\'t arriving near our current newborn window. Fill in your details and we\'ll reach out near your anatomy scan \u2014 you may be a great fit for a maternity session instead.'
+        noteHtml: 'Your baby isn\'t arriving near our current newborn window. Fill in your details and we\'ll reach out near your anatomy scan — you may be a great fit for a maternity session instead.'
       };
     }
 
-    // Baby due before July 25 or after Aug 7 and past 22 weeks — unqualified
-    // Only option is family (no more pregnancy services available)
-    return { valid: 'unqualified', reason: due < july25 ? 'beforeJuly' : 'afterAug' };
+    // 22+ weeks today AND baby due after July 19 — qualified for Sprout
+    if (due > july19) {
+      return { valid: 'good' };
+    }
+
+    // Baby due on or before July 19 — unqualified, family only
+    return { valid: 'unqualified', reason: 'beforeJuly19' };
   }
 
   return { valid: 'good' };
@@ -1166,8 +1200,29 @@ function handleDueDateChange() {
   btn.disabled = false;
 }
 
+function startOverHtml() {
+  return '<button class="start-over-btn" onclick="startOver()">↺ Start over</button>';
+}
+
+function startOver() {
+  // Reset all state and go back to intro
+  state.service = null; state.dueDate = null; state.dueDateValid = null;
+  state.dueDateReason = null; state.klavWindowOpens = null; state.timing = null;
+  state.gradYear = null; state.budget = null; state.firstName = null;
+  state.lastName = null; state.name = null; state.email = null;
+  state.phone = null; state.prefMonth = null; state.prefYear = null;
+  state.cameFromExperience = false;
+  currentStep = -1;
+  render();
+}
 // ── Budget / Investment Step ─────────────────────────────────────────
 function renderBudgetStep(content) {
+  // If budget already answered on a loop, auto-advance immediately
+  // so the user is never asked to re-read pricing they already agreed to
+  if (state.budget === 'yes') {
+    setTimeout(function() { goNext(); }, 0);
+    return;
+  }
   const svc = state.service;
   // Service-specific what's-included chips
   const baseChips = [
@@ -1465,7 +1520,8 @@ async function submitToKlaviyo(listId, properties, statusEl, successMsg) {
         div.className = 'success-screen';
         div.innerHTML = '<span class="success-icon">✓</span>'
           + "<h2 class=\"success-headline\">We got you.<br><em>You'll hear from us soon.</em></h2>"
-          + "<p class=\"success-body\">Your information is saved. We'll send you a confirmation shortly, and we'll be back in touch when we're ready to book. No need to do anything else.</p>";
+          + "<p class=\"success-body\">Your information is saved. We'll send you a confirmation shortly, and we'll be back in touch when we're ready to book. No need to do anything else.</p>"
+          + startOverHtml();
         form.parentNode.replaceChild(div, form);
       }
     } else {
@@ -1574,15 +1630,18 @@ function renderUnifiedForm(el) {
   document.getElementById('progressShell').style.display = 'none';
   document.getElementById('bottomNav').style.display     = 'none';
 
-  const copy     = getResultCopy();
-  const fixed    = hasFixedRouting();
-  const svc      = state.service;
-  const autoNote = buildAutoNote();
+  const copy          = getResultCopy();
+  const fixed         = hasFixedRouting();
+  const svc           = state.service;
+  const autoNote      = buildAutoNote();
+  const isPregnancySvc = ['maternity','boudoir','newborn'].includes(svc);
 
   const svcOptions = Object.entries(SERVICE_DISPLAY).map(function(pair) {
     var v = pair[0], l = pair[1];
     return '<option value="' + v + '"' + (v === svc ? ' selected' : '') + '>' + l + '</option>';
   }).join('');
+  // For pregnancy tooEarly paths: hide the session type select, use hidden input instead
+  const isPregTooEarly = ['maternity','boudoir','newborn'].includes(svc) && state.dueDateValid === 'tooEarly';
 
   const spotBadge = copy.spot
     ? '<span class="spots-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>' + copy.spot + '</span>'
@@ -1614,9 +1673,10 @@ function renderUnifiedForm(el) {
     '</div>' +
     '<input type="email" class="text-field" id="uf-email" placeholder="Email address"  oninput="checkUnifiedForm()">' +
     '<input type="tel"   class="text-field" id="uf-phone" placeholder="Phone number"   oninput="checkUnifiedForm()">' +
-    '<select class="text-field" id="uf-session" onchange="checkUnifiedForm()">' +
-    svcOptions +
-    '</select>' +
+    (isPregnancySvc
+      ? '<input type="hidden" id="uf-session" value="' + svc + '">'
+      : '<select class="text-field" id="uf-session" onchange="checkUnifiedForm()">' + svcOptions + '</select>'
+    ) +
     '<input type="hidden" id="uf-meta" value="' + encodeURIComponent(autoNote) + '">' +
     '<textarea class="text-field" id="uf-notes" placeholder="Tell us a little about what you\'re envisioning\u2026" oninput="checkUnifiedForm()"></textarea>' +
     forkHtml +
@@ -1630,6 +1690,7 @@ function renderUnifiedForm(el) {
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
     'Text (248) 274-6361</a>' +
     '</div></div>' +
+    startOverHtml() +
     '</div>';
   // Trigger validation immediately — select is pre-populated so button
   // should enable as soon as name + email + phone are filled
@@ -1889,6 +1950,8 @@ function loopToService(newService) {
   // Preserve the dueDate across the loop — it's the same fact about the customer
   const preservedDate = state.dueDate;
 
+  const preservedBudget = state.budget;  // keep budget — they already saw the price
+
   state.service           = newService;
   state.dueDateValid      = null;
   state.dueDateReason     = null;
@@ -1896,7 +1959,7 @@ function loopToService(newService) {
   state.klavWindowOpens   = null;
   state.timing            = null;
   state.gradYear          = null;
-  state.budget            = null;
+  state.budget            = preservedBudget;  // restore — no need to re-read pricing
   state.cameFromExperience = false;
 
   // For pregnancy → pregnancy loops, re-qualify the date under new service rules
@@ -1914,8 +1977,13 @@ function loopToService(newService) {
       render();
       return;
     }
-    // tooEarly or good — both go to budget first (so price is always shown),
-    // then result routing handles Klaviyo vs Sprout correctly
+    // Budget already answered — skip it and go straight to result
+    if (preservedBudget === 'yes') {
+      currentStep = STEPS.length;
+      render();
+      return;
+    }
+    // Budget not set — go to budget step first
     currentStep = STEPS.findIndex(s => s.id === 'budget');
     render();
     return;
@@ -1929,9 +1997,11 @@ function loopToService(newService) {
     return;
   }
 
-  // Non-pregnancy services (family, branding, beauty, senior) — clear date,
-  // go to timing step. The date isn't relevant for these.
+  // Non-pregnancy services — clear date, go to timing step
+  // Budget is already answered — they'll pass through it in one tap,
+  // or we can skip to timing directly.
   state.dueDate = null;
+  state.timing  = null;  // clear timing so they pick a session month
   currentStep = STEPS.findIndex(s => s.id === 'timing');
   render();
 }
@@ -1945,13 +2015,20 @@ function renderMaternityUnmatch(content) {
   document.getElementById('progressShell').style.display = 'none';
   document.getElementById('bottomNav').style.display     = 'none';
 
-  // Check if their date qualifies for newborn
-  const savedService = state.service;
-  state.service = 'newborn';
-  const nbQ = state.dueDate ? qualifyDueDate(state.dueDate) : { valid: 'unqualified' };
-  state.service = savedService;
+  // Show newborn card if their due date is after July 19 — regardless of weeks today.
+  // Clicking newborn will re-qualify under newborn rules:
+  //   tooEarly (<22wks today) → Klaviyo maternity list
+  //   good (≥22wks + due>Jul19) → Sprout
+  // We show the card for both cases so they have a path.
+  let newbornQualifies = false;
+  if (state.dueDate) {
+    const fa2    = firstAvailableDate();
+    const july19 = new Date(fa2.getFullYear(), 6, 19);
+    const due2   = new Date(state.dueDate + 'T12:00:00');
+    newbornQualifies = due2 > july19;  // date check only — week check happens on click
+  }
 
-  const newbornCard = (nbQ.valid === 'good') ?
+  const newbornCard = newbornQualifies ?
     '<button class="explore-card" onclick="loopToService(\'newborn\')">' +
     '<span class="explore-card-label">When baby arrives</span>' +
     '<span class="explore-card-title">Newborn Session</span>' +
@@ -1992,6 +2069,7 @@ function renderMaternityUnmatch(content) {
     '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
     'Text Us  ' + PHONE_DISPLAY +
     '</a></div>' +
+    startOverHtml() +
     '</div>';
 }
 
@@ -2030,6 +2108,7 @@ function renderNewbornUnmatch(content) {
     '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
     'Text Us  ' + PHONE_DISPLAY +
     '</a></div>' +
+    startOverHtml() +
     '</div>';
 }
 
@@ -2131,6 +2210,20 @@ function goNext() {
     currentStep = STEPS.length;
   }
   render();
+}
+
+function startOver() {
+  // Reset all state and go back to the intro screen
+  state.service = null; state.dueDate = null; state.dueDateValid = null;
+  state.dueDateReason = null; state.dueDateNote = null; state.klavWindowOpens = null;
+  state.timing = null; state.gradYear = null; state.budget = null;
+  state.firstName = null; state.lastName = null; state.name = null;
+  state.email = null; state.phone = null; state.prefMonth = null; state.prefYear = null;
+  state.cameFromExperience = false;
+  forkChoice = 'now';
+  currentStep = -1;
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function goBack() {
