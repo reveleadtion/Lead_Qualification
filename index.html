@@ -82,17 +82,17 @@ html, body {
 /* ── Header ─────────────────────────────────────────────────────────── */
 header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 20px;
+  padding: 14px 20px;
   border-bottom: 1px solid var(--faint);
   background: var(--bg);
   position: sticky; top: 0; z-index: 100;
 }
-.logo-wrap { display: flex; align-items: center; }
+.logo-wrap { display: flex; align-items: center; flex: 1; justify-content: center; }
 .logo-img {
   display: block;
-  height: 88px;
+  height: 120px;
   width: auto;
-  max-width: 220px;
+  max-width: 300px;
   object-fit: contain;
 }
 .header-badge {
@@ -101,6 +101,7 @@ header {
   background: var(--gold-dim);
   border: 1px solid var(--gold-bdr);
   padding: 5px 12px; border-radius: 100px; white-space: nowrap;
+  position: absolute; right: 20px;
 }
 
 /* ── Progress bar ────────────────────────────────────────────────────── */
@@ -784,7 +785,8 @@ textarea.text-field {
   header, .progress-shell { padding-left: 32px; padding-right: 32px; }
   main { padding: 0 32px 120px; }
   .bottom-nav { padding: 18px 32px max(18px, env(safe-area-inset-bottom)); }
-  .logo-img { height: 52px; max-width: 260px; }
+  .logo-img { height: 120px; max-width: 300px; }
+  .header-badge { right: 32px; }
 }
 @media (min-width: 900px) {
   main { max-width: 560px; margin: 0 auto; padding: 0 0 140px; }
@@ -1086,10 +1088,6 @@ function render() {
       if (state.gradYear === 'soon' && state.timing === 'later') { renderKlavUniversal(content); return; }
     }
 
-    // ── CHANGE 2: May timing → always Sprout, no fork shown ──
-    // May falls through hasFixedRouting() and lands here without hitting the
-    // 'later' Klaviyo branch below, so no extra guard is needed here.
-
     // 6. Later/flexible timing (non-senior, non-pregnancy) → Klaviyo universal
     if (state.timing === 'later' && service !== 'senior') {
       renderKlavUniversal(content); return;
@@ -1284,7 +1282,6 @@ function selectBudget(value, el) {
 
 // ── Options Step ────────────────────────────────────────────────────
 function renderOptionsStep(content, step) {
-  // ── CHANGE 1 (cont): Apply may-urgent class to the May button ──
   const optHtml = step.options.map(o => {
     const mayClass = o.mayUrgent ? ' may-urgent' : '';
     return `
@@ -1363,14 +1360,12 @@ const SERVICE_DISPLAY = {
   beauty:    'Beauty / Milestone',
 };
 
-// ── CHANGE 2: May timing has fixed routing → always Sprout, no fork ──
 function hasFixedRouting() {
   const svc = state.service;
   const dv  = state.dueDateValid;
   if (svc === 'maternity' || svc === 'boudoir' || svc === 'newborn') return true;
   if (svc === 'senior' && state.gradYear === 'later') return true;
   if (svc === 'senior' && state.gradYear === 'soon' && state.timing && state.timing !== 'later') return true;
-  // May last-minute: always route directly to Sprout, never show the fork
   if (state.timing === 'may') return true;
   return false;
 }
@@ -1513,7 +1508,6 @@ async function submitKlaviyo() {
     '\u2713 You\'re on the list. We\'ll be in touch around your anatomy scan.');
 }
 
-// ── CHANGE 4: May added to buildAutoNote timing map ──
 function buildAutoNote() {
   const parts = [];
   if (state.dueDate) {
@@ -1532,7 +1526,6 @@ function buildAutoNote() {
   return parts.join(' | ');
 }
 
-// ── CHANGE 5: May added to getResultCopy spotMap ──
 function getResultCopy() {
   const svc    = state.service;
   const timing = state.timing;
@@ -1559,7 +1552,6 @@ function getResultCopy() {
   if (svc === 'senior' && state.gradYear === 'soon') {
     return { eyebrow: 'Reserve Your Session', headline: 'Let\'s capture <em>this milestone.</em>', body: 'We\'d love to work with your senior. Select your preferred session month and fill in your details below.', spot: '' };
   }
-  // May: urgency-focused copy
   if (timing === 'may') {
     return { eyebrow: 'Last Minute Availability', headline: 'Grab this <em>before it\'s gone.</em>', body: 'We have a rare last-minute opening this May. Fill in your details below and we\'ll be in touch quickly to lock it in.', spot: spotMap.may };
   }
@@ -1619,7 +1611,6 @@ function renderUnifiedForm(el) {
     ? '<span class="spots-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>' + copy.spot + '</span>'
     : '';
 
-  // ── May sessions: fixed routing → no fork, submit label is direct ──
   const forkHtml = fixed ? '' :
     '<div class="fork-row">' +
     '<span class="fork-label">When would you like us to reach out?</span>' +
@@ -1729,9 +1720,6 @@ async function submitUnified() {
   const svc          = state.service;
   const dv           = state.dueDateValid;
 
-  // ── CHANGE 2 (cont): May always routes to Sprout — no fork override needed
-  // because hasFixedRouting() returns true for May, so forkChoice is never shown
-  // and will always be the default 'now'. The dest logic below handles it correctly.
   let dest = 'sprout';
 
   if ((svc === 'maternity' || svc === 'boudoir' || svc === 'newborn') && dv === 'tooEarly') {
