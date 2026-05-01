@@ -233,6 +233,14 @@ main {
   border-color: var(--gold);
   box-shadow: 0 0 0 1px rgba(199,178,122,0.2);
 }
+/* ── May last-minute button — subtle urgency highlight ──────────────── */
+.opt-btn.may-urgent {
+  border-color: var(--gold-bdr);
+  background: var(--gold-dim);
+}
+.opt-btn.may-urgent .opt-label { color: var(--text); font-weight: 400; }
+.opt-btn.may-urgent .opt-sub   { color: var(--gold); font-weight: 500; }
+.opt-btn.may-urgent.selected   { border-color: var(--gold); box-shadow: 0 0 0 1px rgba(168,146,90,0.3); }
 .opt-check {
   width: 19px; height: 19px;
   border: 1px solid var(--border);
@@ -853,6 +861,8 @@ const SERVICE_URLS = {
 };
 
 // Spot counts (update manually when calendar fills)
+// ── MAY LAST-MINUTE: set MAY_SPOTS to 0 to hide the May option entirely ──
+const MAY_SPOTS = 1; // set to 0 when May is full
 const SPOTS = { aug: 3, sep: 5, oct: 5 };
 
 // =====================================================================
@@ -880,7 +890,6 @@ const state = {
 // =====================================================================
 //  STEP DEFINITIONS
 // =====================================================================
-// Steps are objects; activeSteps() filters by current state.
 const STEPS = [
   { id: 'service',  type: 'options',  label: 'What brings you here?',
     hint: 'Select the session type you have in mind.',
@@ -898,7 +907,7 @@ const STEPS = [
     hint: null,
     showIf: () => ['maternity','boudoir','newborn'].includes(state.service)
   },
-  // Senior: grad year asked FIRST — two simple options drive the entire routing decision
+  // Senior: grad year asked FIRST
   { id: 'gradyear', type: 'options', label: 'When does your senior graduate?',
     hint: 'This helps us match your senior to the right session window.',
     showIf: () => state.service === 'senior',
@@ -909,22 +918,26 @@ const STEPS = [
   },
   { id: 'timing',  type: 'options', label: 'When are you hoping to have your session?',
     hint: 'Our next availability opens August 1st.',
-    // Shown for non-pregnancy, non-senior services AND for seniors graduating soon (2026/2027)
     showIf: () => {
       const svc = state.service;
       if (['maternity','boudoir','newborn'].includes(svc)) return false;
       if (svc === 'senior') return state.gradYear === 'soon';
       return true;
     },
-    options: [
-      { value: 'aug',   label: 'August',           sub: SPOTS.aug + ' spots remaining' },
-      { value: 'sep',   label: 'September',        sub: SPOTS.sep + ' spots remaining' },
-      { value: 'oct',   label: 'October',          sub: SPOTS.oct + ' spots remaining' },
-      { value: 'later', label: 'Later / Flexible',  sub: null },
-    ]
+    // ── CHANGE 1: May option added. MAY_SPOTS guard prevents showing when full. ──
+    get options() {
+      const opts = [];
+      if (MAY_SPOTS > 0) {
+        opts.push({ value: 'may', label: 'May — Last Minute', sub: MAY_SPOTS + ' spot' + (MAY_SPOTS > 1 ? 's' : '') + ' remaining this month', mayUrgent: true });
+      }
+      opts.push({ value: 'aug',   label: 'August',          sub: SPOTS.aug + ' spots remaining' });
+      opts.push({ value: 'sep',   label: 'September',       sub: SPOTS.sep + ' spots remaining' });
+      opts.push({ value: 'oct',   label: 'October',         sub: SPOTS.oct + ' spots remaining' });
+      opts.push({ value: 'later', label: 'Later / Flexible', sub: null });
+      return opts;
+    }
   },
   { id: 'budget', type: 'budget', label: 'investment' },
-  // Contact step removed — fields collected on final result screen
 ];
 
 function activeSteps() {
@@ -955,18 +968,15 @@ function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 // =====================================================================
 //  DUE DATE QUALIFICATION
 // =====================================================================
-
-// Returns the first Aug 1 that is >= today.
-// If today is already Aug 1 or later in the current year, returns next year\'s Aug 1.
 function firstAvailableDate() {
   const today = new Date(); today.setHours(0,0,0,0);
-  const thisYearAug1 = new Date(today.getFullYear(), 7, 1); // month 7 = August (0-indexed)
+  const thisYearAug1 = new Date(today.getFullYear(), 7, 1);
   return thisYearAug1 >= today ? thisYearAug1 : new Date(today.getFullYear() + 1, 7, 1);
 }
 
 function qualifyDueDate(dueDateStr) {
   const today    = new Date(); today.setHours(0,0,0,0);
-  const firstAvail = firstAvailableDate(); // earliest we can shoot — Aug 1 of current/next yr
+  const firstAvail = firstAvailableDate();
 
   const service = state.service;
 
@@ -974,16 +984,8 @@ function qualifyDueDate(dueDateStr) {
     const weeksNow    = weeksAlongOnDate(dueDateStr, today);
     const weeksAtOpen = weeksAlongOnDate(dueDateStr, firstAvail);
 
-    // Gate 1: Past 32 weeks today — too far along
     if (weeksNow >= 32) return { valid: 'unqualified', reason: 'past32' };
-
-    // Gate 2: Would be 32+ weeks at Aug 1 — outside our shooting window
-    // This catches Sept 7 (34.6wks at Aug1), Aug 15, etc.
     if (weeksAtOpen >= 32) return { valid: 'unqualified', reason: 'tooEarlyDue' };
-
-    // Gate 3: Under 22 weeks today — too early, mom not ready to engage
-    // Only fires for dates that PASS gate 2 (i.e. wOpen < 32)
-    // e.g. Dec 15 (7wks today, 20.5wks at Aug1)
     if (weeksNow < 22) {
       const due = new Date(dueDateStr + 'T12:00:00');
       const windowOpens = new Date(due.getTime() - 18 * MS_WEEK);
@@ -994,8 +996,6 @@ function qualifyDueDate(dueDateStr) {
         noteHtml: 'You\'re a little early in your pregnancy for us to lock anything in just yet. Fill in your details and we\'ll reach out around your anatomy scan \u2014 right when the timing is perfect.'
       };
     }
-
-    // Gate 4: 22-32 weeks today AND < 32 at Aug 1 — qualified for Sprout
     const due = new Date(dueDateStr + 'T12:00:00');
     const sessionStart = new Date(due.getTime() - 32 * MS_WEEK);
     let noteHtml = '';
@@ -1005,14 +1005,11 @@ function qualifyDueDate(dueDateStr) {
     return { valid: 'good', noteHtml };
   }
 
-
   if (service === 'newborn') {
     const due    = new Date(dueDateStr + 'T12:00:00');
     const weeksNow = weeksAlongOnDate(dueDateStr, today);
-    // New cutoff: July 19 (more flex time than July 25)
     const july19 = new Date(firstAvail.getFullYear(), 6, 19);
 
-    // Under 22 weeks today — too early. Capture on Klaviyo maternity list.
     if (weeksNow < 22) {
       const windowOpens = new Date(due.getTime() - 18 * MS_WEEK);
       return {
@@ -1022,13 +1019,9 @@ function qualifyDueDate(dueDateStr) {
         noteHtml: 'Your baby isn\'t arriving near our current newborn window. Fill in your details and we\'ll reach out near your anatomy scan — you may be a great fit for a maternity session instead.'
       };
     }
-
-    // 22+ weeks today AND baby due after July 19 — qualified for Sprout
     if (due > july19) {
       return { valid: 'good' };
     }
-
-    // Baby due on or before July 19 — unqualified, family only
     return { valid: 'unqualified', reason: 'beforeJuly19' };
   }
 
@@ -1056,7 +1049,7 @@ function render() {
       <div class="intro-block">
         <p class="intro-eyebrow">Free Session Match — Limited Spots Available</p>
         <h1 class="intro-headline">Find your <em>perfect session</em><br>in 2 minutes.</h1>
-        <p class="intro-body">Answer a few quick questions and we\'ll tell you exactly which session fits your timeline, what\'s available, and how to claim your spot — before it\'s gone.</p>
+        <p class="intro-body">Answer a few quick questions and we'll tell you exactly which session fits your timeline, what's available, and how to claim your spot — before it's gone.</p>
         <div class="intro-value-card">
           <span class="intro-value-label">What You Get</span>
           <div class="intro-value-title">Your Personalized Session Match + Availability Check</div>
@@ -1079,43 +1072,33 @@ function render() {
     const budg    = state.budget;
     const dv      = state.dueDateValid;
 
-    // 0. Safety gate — if budget is not set or not 'yes'/'learn'/'no', something bypassed
-    //    the investment step. Route back to budget so they see the price.
     if (!budg) { currentStep = STEPS.findIndex(s => s.id === 'budget'); render(); return; }
 
-    // 1. Budget declined — unmatch + redirect
     if (budg === 'no') { renderBudgetUnmatch(content); return; }
-
-    // 2. Experience panel requested — show offer details
     if (budg === 'learn') { renderExperience(content); return; }
 
-    // 3. Due date timing unqualified (regardless of budget) — unmatch
     if (dv === 'unqualified') {
       if (service === 'newborn') { renderNewbornUnmatch(content); return; }
       renderMaternityUnmatch(content); return;
     }
 
-    // 4. tooEarly (maternity, boudoir, or newborn) — route to Klaviyo maternity capture
     if (dv === 'tooEarly') { renderKlavCapture(content); return; }
 
-    // 5. Senior routing — driven by grad year choice
     if (service === 'senior') {
-      if (state.gradYear === 'later') {
-        renderKlavSenior(content); return;   // 2028+ → Klaviyo waitlist
-      }
-      // 'soon' (2026/2027): check timing — if 'later' → Klaviyo universal, else → Sprout
-      if (state.gradYear === 'soon' && state.timing === 'later') {
-        renderKlavUniversal(content); return;
-      }
-      // 'soon' with specific month (aug/sep/oct) → Sprout (falls through to step 7)
+      if (state.gradYear === 'later') { renderKlavSenior(content); return; }
+      if (state.gradYear === 'soon' && state.timing === 'later') { renderKlavUniversal(content); return; }
     }
+
+    // ── CHANGE 2: May timing → always Sprout, no fork shown ──
+    // May falls through hasFixedRouting() and lands here without hitting the
+    // 'later' Klaviyo branch below, so no extra guard is needed here.
 
     // 6. Later/flexible timing (non-senior, non-pregnancy) → Klaviyo universal
     if (state.timing === 'later' && service !== 'senior') {
       renderKlavUniversal(content); return;
     }
 
-    // 7. Fully qualified — Sprout form
+    // 7. Fully qualified — Sprout form (includes May last-minute)
     renderQualified(content);
     return;
   }
@@ -1136,7 +1119,6 @@ function render() {
   btnNext.disabled = needsSelection(step);
   btnNext.textContent = posNow === total - 1 ? 'See My Availability \u2192' : 'Continue \u2192';
 
-  // Dots
   dotsEl.innerHTML = '';
   for (let i = 0; i < total; i++) {
     const d = document.createElement('div');
@@ -1144,7 +1126,6 @@ function render() {
     dotsEl.appendChild(d);
   }
 
-  // Step content
   if (step.type === 'duedate') {
     renderDueDateStep(content, step);
   } else if (step.type === 'budget') {
@@ -1168,9 +1149,7 @@ function needsSelection(step) {
 // ── Due Date Step ───────────────────────────────────────────────────
 function renderDueDateStep(content, step) {
   const isNewborn = state.service === 'newborn';
-  const hed = isNewborn
-    ? 'When is your baby due?'
-    : 'When is your baby due?';
+  const hed = 'When is your baby due?';
   const hint = isNewborn
     ? 'Newborn sessions are best within the first two weeks of life — your due date helps us confirm availability.'
     : 'Your due date helps us find your ideal session timing.';
@@ -1214,7 +1193,6 @@ function handleDueDateChange() {
     note.innerHTML = '';
     state.dueDateNote = '';
   }
-  // Store klavWindowOpens if present
   if (q.klavWindowOpens) state.klavWindowOpens = q.klavWindowOpens;
 
   btn.disabled = false;
@@ -1225,7 +1203,6 @@ function startOverHtml() {
 }
 
 function startOver() {
-  // Reset all state and go back to intro
   state.service = null; state.dueDate = null; state.dueDateValid = null;
   state.dueDateReason = null; state.klavWindowOpens = null; state.timing = null;
   state.gradYear = null; state.budget = null; state.firstName = null;
@@ -1235,16 +1212,14 @@ function startOver() {
   currentStep = -1;
   render();
 }
+
 // ── Budget / Investment Step ─────────────────────────────────────────
 function renderBudgetStep(content) {
-  // If budget already answered on a loop, auto-advance immediately
-  // so the user is never asked to re-read pricing they already agreed to
   if (state.budget === 'yes') {
     setTimeout(function() { goNext(); }, 0);
     return;
   }
   const svc = state.service;
-  // Service-specific what's-included chips
   const baseChips = [
     { label: 'Professional Hair & Makeup',        hi: true  },
     { label: 'Heirloom Prints, Albums & Wall Art', hi: true  },
@@ -1252,7 +1227,6 @@ function renderBudgetStep(content) {
     { label: 'Perfection Without Time Constraints',hi: false },
     { label: 'In-Studio & Outdoors',               hi: false },
   ];
-  // Swap index 2 (Planning Consult) for service-specific chip, add extras
   if (svc === 'maternity' || svc === 'boudoir') {
     baseChips.splice(2, 0, { label: 'Designer Maternity Gown Collection', hi: true });
   }
@@ -1313,21 +1287,25 @@ function selectBudget(value, el) {
 
 // ── Options Step ────────────────────────────────────────────────────
 function renderOptionsStep(content, step) {
+  // ── CHANGE 1 (cont): Apply may-urgent class to the May button ──
+  const optHtml = step.options.map(o => {
+    const mayClass = o.mayUrgent ? ' may-urgent' : '';
+    return `
+      <button class="opt-btn${mayClass} ${state[step.id] === o.value ? 'selected' : ''}"
+        onclick="selectOpt('${step.id}','${o.value}',this)">
+        <span class="opt-check"></span>
+        <span class="opt-text">
+          <span class="opt-label">${o.label}</span>
+          ${o.sub ? '<span class="opt-sub">' + o.sub + '</span>' : ''}
+        </span>
+      </button>`;
+  }).join('');
+
   content.innerHTML = `
     <div class="question-wrap">
       <h2 class="question-headline">${step.label}</h2>
       ${step.hint ? '<p class="question-hint">' + step.hint + '</p>' : ''}
-      <div class="options-list">
-        ${step.options.map(o => `
-          <button class="opt-btn ${state[step.id] === o.value ? 'selected' : ''}"
-            onclick="selectOpt('${step.id}','${o.value}',this)">
-            <span class="opt-check"></span>
-            <span class="opt-text">
-              <span class="opt-label">${o.label}</span>
-              ${o.sub ? '<span class="opt-sub">' + o.sub + '</span>' : ''}
-            </span>
-          </button>`).join('')}
-      </div>
+      <div class="options-list">${optHtml}</div>
       <p class="val-msg" id="valMsg"></p>
     </div>`;
 }
@@ -1368,14 +1346,6 @@ function checkContact() {
 //  RESULT RENDERERS
 // =====================================================================
 
-// ═══════════════════════════════════════════════════════════════════
-//  UNIFIED RESULT FORM — used by all qualified paths
-//  Collects: first, last, email, phone, session, notes, contact_timing
-//  contact_timing fork: "now" → Sprout, "later" → Klaviyo (except
-//  maternity/newborn/senior 2028+ which have fixed routing)
-// ═══════════════════════════════════════════════════════════════════
-
-// Values must match Sprout Studio session type labels exactly (Settings → Lead Forms)
 const SERVICE_LABELS = {
   maternity: 'Maternity',
   boudoir:   'Maternity',
@@ -1386,7 +1356,6 @@ const SERVICE_LABELS = {
   beauty:    'Beauty / Milestone',
 };
 
-// Display labels for the form select (human-readable)
 const SERVICE_DISPLAY = {
   maternity: 'Maternity Session',
   boudoir:   'Boudoir Maternity Session',
@@ -1397,23 +1366,17 @@ const SERVICE_DISPLAY = {
   beauty:    'Beauty / Milestone',
 };
 
-// Returns true for services where routing is fully determined by existing state —
-// these skip the now/later fork on the unified form
+// ── CHANGE 2: May timing has fixed routing → always Sprout, no fork ──
 function hasFixedRouting() {
   const svc = state.service;
   const dv  = state.dueDateValid;
-  // All pregnancy services have fixed routing — no fork ever shown
-  // tooEarly → Klaviyo maternity list (no "later" option, they are already captured)
-  // good     → Sprout only (no "later" option, they are ready to book)
   if (svc === 'maternity' || svc === 'boudoir' || svc === 'newborn') return true;
-  // Senior 2028+ → Klaviyo waitlist, no fork
   if (svc === 'senior' && state.gradYear === 'later') return true;
-  // Senior soon + specific timing month → Sprout, no fork
   if (svc === 'senior' && state.gradYear === 'soon' && state.timing && state.timing !== 'later') return true;
+  // May last-minute: always route directly to Sprout, never show the fork
+  if (state.timing === 'may') return true;
   return false;
 }
-
-// ── Klaviyo property builders ─────────────────────────────────────────
 
 function buildMaternityProps() {
   const today   = new Date(); today.setHours(0,0,0,0);
@@ -1434,12 +1397,11 @@ function buildMaternityProps() {
     'tws_week_at_signup':    weeksNow,
     'tws_quiz_status':       'early',
     'tws_quiz_package':      'whiteGlove',
-    'tws_result_url':        SERVICE_URLS.maternity,  // always maternity URL even for newborn tooEarly
+    'tws_result_url':        SERVICE_URLS.maternity,
   };
 }
 
 function buildSeniorProps() {
-  // gradYear is 'later' (2028+) — map to Klaviyo properties
   return {
     '$phone_number_region': 'US',
     '$source':              'senior_waitlist_embed',
@@ -1457,8 +1419,8 @@ function buildSeniorProps() {
 
 function buildUniversalProps() {
   const svc         = state.service || 'family';
-  const prefMonth   = state.prefMonth || '';   // e.g. '09'
-  const prefYear    = state.prefYear  || '';   // e.g. '2026'
+  const prefMonth   = state.prefMonth || '';
+  const prefYear    = state.prefYear  || '';
   const props = {
     '$phone_number_region': 'US',
     '$source':              'qualifier_embed',
@@ -1467,24 +1429,21 @@ function buildUniversalProps() {
     'tws_quiz_package':     'whiteGlove',
     'tws_result_url':       SERVICE_URLS[svc] || SERVICE_URLS.family,
   };
-  // Compute outreach date: 6 weeks (42 days) before the 1st of their preferred month
   if (prefMonth && prefYear) {
     const sessionStart  = new Date(parseInt(prefYear, 10), parseInt(prefMonth, 10) - 1, 1);
     const outreachDate  = new Date(sessionStart.getTime() - 42 * 24 * 3600 * 1000);
-    // ISO string for Klaviyo flow trigger: YYYY-MM-DDTHH:mm:ss
     const iso = outreachDate.getFullYear()
       + '-' + String(outreachDate.getMonth() + 1).padStart(2, '0')
       + '-' + String(outreachDate.getDate()).padStart(2, '0')
       + 'T00:00:00';
     props['tws_outreach_date']       = iso;
-    props['tws_preferred_session']   = prefYear + '-' + prefMonth;  // e.g. '2026-09'
+    props['tws_preferred_session']   = prefYear + '-' + prefMonth;
     const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    props['tws_preferred_session_label'] = monthNames[parseInt(prefMonth,10) - 1] + ' ' + prefYear; // e.g. 'September 2026'
+    props['tws_preferred_session_label'] = monthNames[parseInt(prefMonth,10) - 1] + ' ' + prefYear;
   }
   return props;
 }
 
-// Core Klaviyo submit — shared by all Klaviyo paths
 async function submitToKlaviyo(listId, properties, statusEl, successMsg) {
   const name  = state.name  || '';
   const email = state.email || '';
@@ -1498,7 +1457,6 @@ async function submitToKlaviyo(listId, properties, statusEl, successMsg) {
   const firstName = parts[0];
   const lastName  = parts.slice(1).join(' ');
 
-  // Format phone to E.164 for Klaviyo SMS (+1XXXXXXXXXX)
   const digits  = phone.replace(/[^0-9]/g, '');
   const phoneE164 = digits.length === 10 ? '+1' + digits
                   : digits.length === 11 && digits[0] === '1' ? '+' + digits
@@ -1508,15 +1466,12 @@ async function submitToKlaviyo(listId, properties, statusEl, successMsg) {
   if (phoneE164) profileAttrs.phone_number = phoneE164;
 
   try {
-    // Step 1: Create/update profile with phone_number at top level
     await fetch('https://a.klaviyo.com/client/profiles/?company_id=' + KLAV_PUBLIC, {
       method: 'POST',
       headers: { 'content-type': 'application/json', revision: '2023-12-15' },
       body: JSON.stringify({ data: { type: 'profile', attributes: profileAttrs }})
     });
 
-    // Step 2: Subscribe profile to the list
-    // Klaviyo client API subscription endpoint
     const subRes = await fetch('https://a.klaviyo.com/client/subscriptions/?company_id=' + KLAV_PUBLIC, {
       method: 'POST',
       headers: { 'content-type': 'application/json', revision: '2023-12-15' },
@@ -1555,13 +1510,13 @@ async function submitToKlaviyo(listId, properties, statusEl, successMsg) {
   }
 }
 
-// Legacy submitKlaviyo — kept for safety
 async function submitKlaviyo() {
   const statusEl = document.getElementById('klav-status');
   await submitToKlaviyo(KLAV_LIST_MATERNITY, buildMaternityProps(), statusEl,
     '\u2713 You\'re on the list. We\'ll be in touch around your anatomy scan.');
 }
 
+// ── CHANGE 4: May added to buildAutoNote timing map ──
 function buildAutoNote() {
   const parts = [];
   if (state.dueDate) {
@@ -1569,7 +1524,7 @@ function buildAutoNote() {
     parts.push('Due date: ' + d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}));
   }
   if (state.timing && state.timing !== 'later') {
-    const map = { aug: 'August', sep: 'September', oct: 'October' };
+    const map = { may: 'May (last minute)', aug: 'August', sep: 'September', oct: 'October' };
     parts.push('Preferred timing: ' + (map[state.timing] || state.timing));
   }
   if (state.gradYear) {
@@ -1580,12 +1535,17 @@ function buildAutoNote() {
   return parts.join(' | ');
 }
 
-// Determines fixed headline/subtext based on service + timing
+// ── CHANGE 5: May added to getResultCopy spotMap ──
 function getResultCopy() {
   const svc    = state.service;
   const timing = state.timing;
   const dv     = state.dueDateValid;
-  const spotMap = { aug: SPOTS.aug + ' spots remaining in August', sep: SPOTS.sep + ' spots remaining in September', oct: SPOTS.oct + ' spots remaining in October' };
+  const spotMap = {
+    may: MAY_SPOTS + ' spot' + (MAY_SPOTS > 1 ? 's' : '') + ' remaining in May',
+    aug: SPOTS.aug + ' spots remaining in August',
+    sep: SPOTS.sep + ' spots remaining in September',
+    oct: SPOTS.oct + ' spots remaining in October'
+  };
 
   if (svc === 'newborn') {
     return { eyebrow: 'Reserve Your Session', headline: 'Your timing is perfect.', body: 'Fill in your details below and we\'ll reach out right away to confirm your newborn session.', spot: '' };
@@ -1602,24 +1562,25 @@ function getResultCopy() {
   if (svc === 'senior' && state.gradYear === 'soon') {
     return { eyebrow: 'Reserve Your Session', headline: 'Let\'s capture <em>this milestone.</em>', body: 'We\'d love to work with your senior. Select your preferred session month and fill in your details below.', spot: '' };
   }
+  // May: urgency-focused copy
+  if (timing === 'may') {
+    return { eyebrow: 'Last Minute Availability', headline: 'Grab this <em>before it\'s gone.</em>', body: 'We have a rare last-minute opening this May. Fill in your details below and we\'ll be in touch quickly to lock it in.', spot: spotMap.may };
+  }
   const spot = timing ? (spotMap[timing] || '') : '';
   const body = spot ? 'We have <strong>' + spot + '</strong>. Fill in your details below and we\'ll be in touch within one business day.' : 'We\'d love to connect. Fill in your details below and we\'ll be in touch.';
   return { eyebrow: 'Reserve Your Session', headline: 'We\'d love to work with you.', body, spot };
 }
 
-// ── Dynamic month picker — only shows months >=8 weeks from today ────
 function buildMonthPickerHtml() {
   const MONTH_NAMES = ['January','February','March','April','May','June',
                        'July','August','September','October','November','December'];
   const MIN_WEEKS = 8;
   const today     = new Date(); today.setHours(0,0,0,0);
 
-  // Floor: August 2026 is the absolute earliest available session month.
-  // After that, use 8-week rolling minimum from today.
-  const FLOOR = new Date(2026, 7, 1); // August 1, 2026
+  const FLOOR = new Date(2026, 7, 1);
   const minDate = FLOOR > today
-    ? FLOOR                                                     // before Aug 2026: show Aug 2026 first
-    : new Date(today.getTime() + MIN_WEEKS * 7 * 24 * 3600 * 1000); // after Aug 2026: 8wks from today
+    ? FLOOR
+    : new Date(today.getTime() + MIN_WEEKS * 7 * 24 * 3600 * 1000);
 
   const opts = ['<option value="" disabled selected>Select a month &amp; year</option>'];
   for (let offset = 0; offset < 30; offset++) {
@@ -1638,14 +1599,9 @@ function buildMonthPickerHtml() {
 }
 
 function onMonthYearChange() {
-  const sel = (document.getElementById('uf-monthyear') || {}).value || '';
-  const parts = sel.split('|');
-  // Store month/year in hidden fields so submitUnified can read them
-  // (uf-month and uf-year are now virtual — we parse from the combined select)
   checkUnifiedForm();
 }
 
-// The unified form — called by all qualified result paths
 function renderUnifiedForm(el) {
   document.getElementById('progressShell').style.display = 'none';
   document.getElementById('bottomNav').style.display     = 'none';
@@ -1660,13 +1616,13 @@ function renderUnifiedForm(el) {
     var v = pair[0], l = pair[1];
     return '<option value="' + v + '"' + (v === svc ? ' selected' : '') + '>' + l + '</option>';
   }).join('');
-  // For pregnancy tooEarly paths: hide the session type select, use hidden input instead
   const isPregTooEarly = ['maternity','boudoir','newborn'].includes(svc) && state.dueDateValid === 'tooEarly';
 
   const spotBadge = copy.spot
     ? '<span class="spots-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>' + copy.spot + '</span>'
     : '';
 
+  // ── May sessions: fixed routing → no fork, submit label is direct ──
   const forkHtml = fixed ? '' :
     '<div class="fork-row">' +
     '<span class="fork-label">When would you like us to reach out?</span>' +
@@ -1712,13 +1668,9 @@ function renderUnifiedForm(el) {
     '</div></div>' +
     startOverHtml() +
     '</div>';
-  // Trigger validation immediately — select is pre-populated so button
-  // should enable as soon as name + email + phone are filled
   setTimeout(checkUnifiedForm, 0);
 }
 
-
-// Fork selection — now / later
 let forkChoice = 'now';
 function selectFork(val) {
   forkChoice = val;
@@ -1726,12 +1678,10 @@ function selectFork(val) {
   const btnLater = document.getElementById('fork-later');
   if (btnNow)   btnNow.classList.toggle('selected',   val === 'now');
   if (btnLater) btnLater.classList.toggle('selected', val === 'later');
-  // Show month/year picker and hint only when "later" is selected
   const picker = document.getElementById('monthPicker');
   const hint   = document.getElementById('forkHint');
   if (picker) picker.classList.toggle('visible', val === 'later');
   if (hint)   hint.classList.toggle('visible',   val === 'later');
-  // Update submit button label
   const submit = document.getElementById('unifiedSubmitBtn');
   if (submit) submit.textContent = val === 'later' ? 'Keep Me Posted →' : 'Reserve Your Session →';
   checkUnifiedForm();
@@ -1744,7 +1694,6 @@ function checkUnifiedForm() {
   const baseValid = first.length > 0
     && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
     && phone.replace(/\D/g, '').length >= 7;
-  // When fork = later, require a valid month/year selection (>= 8 weeks out)
   let forkValid = true;
   if (forkChoice === 'later') {
     const sel = (document.getElementById('uf-monthyear') || {}).value || '';
@@ -1753,6 +1702,7 @@ function checkUnifiedForm() {
   const btn = document.getElementById('unifiedSubmitBtn');
   if (btn) btn.disabled = !(baseValid && forkValid);
 }
+
 async function submitUnified() {
   const btn      = document.getElementById('unifiedSubmitBtn');
   const statusEl = document.getElementById('unified-status');
@@ -1768,13 +1718,11 @@ async function submitUnified() {
   const meta    = decodeURIComponent((document.getElementById('uf-meta') || {}).value || '');
   const fullNotes = notes + (meta ? (notes ? '\n\n' : '') + '--- ' + meta : '');
 
-  // Save to state so Klaviyo property builders can use them
   state.firstName = first;
   state.lastName  = last;
   state.name      = (first + ' ' + last).trim();
   state.email     = email;
   state.phone     = phone;
-  // Parse combined month/year select for Klaviyo outreach date
   const _mysel = (document.getElementById('uf-monthyear') || {}).value || '';
   const _myparts = _mysel.split('|');
   state.prefMonth = _myparts[0] || '';
@@ -1784,13 +1732,13 @@ async function submitUnified() {
   const svc          = state.service;
   const dv           = state.dueDateValid;
 
-  // Determine routing:
-  // 1. Fixed routing services (maternity tooEarly, senior 2028+, newborn) ignore fork
-  // 2. Everyone else: fork choice drives Sprout (now) vs Klaviyo Universal (later)
+  // ── CHANGE 2 (cont): May always routes to Sprout — no fork override needed
+  // because hasFixedRouting() returns true for May, so forkChoice is never shown
+  // and will always be the default 'now'. The dest logic below handles it correctly.
   let dest = 'sprout';
 
   if ((svc === 'maternity' || svc === 'boudoir' || svc === 'newborn') && dv === 'tooEarly') {
-    dest = 'klaviyo_maternity';   // newborn tooEarly → same maternity Klaviyo list
+    dest = 'klaviyo_maternity';
   } else if (svc === 'senior' && state.gradYear === 'later') {
     dest = 'klaviyo_senior';
   } else if (!hasFixedRouting() && forkChoice === 'later') {
@@ -1829,20 +1777,17 @@ async function doSproutSubmit(first, last, email, phone, session, notes, statusE
     throw new Error(data.error || data.detail || ('Sprout error ' + res.status));
   }
 
-  // Success — redirect to thank-you page
   if (statusEl) statusEl.textContent = '\u2713 Sending you to our thank-you page\u2026';
   setTimeout(function() {
     window.location.href = 'https://twowildsoulsphotography.com/thank-you';
   }, 800);
 }
 
-// Keep old function names as aliases so Klaviyo result screens still work
 function renderQualified(content)     { renderUnifiedForm(content); }
 function renderKlavCapture(content)   { renderUnifiedForm(content); }
 function renderKlavSenior(content)    { renderUnifiedForm(content); }
 function renderKlavUniversal(content) { renderUnifiedForm(content); }
 
-// Legacy — kept for safety, no longer the primary path
 function checkSproutForm()  { checkUnifiedForm(); }
 function submitSprout()     { submitUnified(); }
 
@@ -1854,7 +1799,7 @@ function renderExperience(content) {
   content.innerHTML = `
     <div class="question-wrap" style="padding-top:28px">
       <p class="intro-eyebrow">Your Stress-Free Experience</p>
-      <h2 class="question-headline" style="margin-bottom:20px">Here\'s exactly what\'s included.</h2>
+      <h2 class="question-headline" style="margin-bottom:20px">Here's exactly what's included.</h2>
 
       <div class="offer-panel">
         <div class="offer-panel-hed">Every detail is intentional.</div>
@@ -1867,7 +1812,7 @@ function renderExperience(content) {
           <div class="process-steps">
             <div class="process-step"><div class="process-num">1</div>
               <div class="process-text"><strong>Begin the Conversation</strong>
-                <em>A relaxed consultation to understand your vision and ensure we\'re the right fit.</em></div></div>
+                <em>A relaxed consultation to understand your vision and ensure we're the right fit.</em></div></div>
             <div class="process-step"><div class="process-num">2</div>
               <div class="process-text"><strong>Expertly Curated Experience</strong>
                 <em>Thoughtful planning, wardrobe guidance, and gentle direction so you feel confident and present.</em></div></div>
@@ -1884,12 +1829,11 @@ function renderExperience(content) {
 
       <div class="exp-btn-group">
         <button class="btn-next" style="font-size:13px;letter-spacing:0.14em;text-transform:uppercase;font-weight:600;padding:16px;border-radius:4px;cursor:pointer;border:none;background:var(--cta);color:var(--cta-text)"
-          onclick="experienceDecision('yes')">I\'m Ready — Let\'s Do This</button>
+          onclick="experienceDecision('yes')">I'm Ready — Let's Do This</button>
         <button class="btn-ghost" onclick="experienceDecision('no')">Not the Right Time</button>
       </div>
     </div>`;
 
-  // Populate dynamic offer items now that the DOM is ready
   populateOfferItems();
 }
 
@@ -1899,18 +1843,15 @@ function experienceDecision(val) {
   if (val === 'no') {
     currentStep = STEPS.length; render();
   } else {
-    // Contact step removed — route directly to result screen
     currentStep = STEPS.length;
     render();
   }
 }
 
-// ── Populate dynamic offer items based on service ─────────────────
 function buildOfferItems() {
   const svc = state.service;
   const items = [];
 
-  // Universal items every service gets
   items.push({ title: 'Professional Hair &amp; Makeup',         desc: 'Arrive camera-ready with complimentary professional hair and makeup artistry — confident, polished, and fully taken care of.' });
   items.push({ title: 'In-Home Planning &amp; Design Consult',  desc: 'We begin with an in-home consultation to understand your vision, curate styling, and plan how your portraits will live in your space.' });
   if (svc !== 'newborn') {
@@ -1918,7 +1859,6 @@ function buildOfferItems() {
   }
   items.push({ title: 'Perfection Without Time Constraints',    desc: 'Your session unfolds naturally — no clock, no rushing. Change outfits, explore locations, and enjoy every moment.' });
 
-  // Service-specific additions
   if (svc === 'maternity' || svc === 'boudoir') {
     items.push({ title: 'Designer Maternity Gown Collection',   desc: 'Choose from our curated wardrobe of flowing designer gowns — fit for your bump, styled to the light, and ready for you to wear.' });
   }
@@ -1930,7 +1870,6 @@ function buildOfferItems() {
     items.push({ title: 'Cap &amp; Gown Session — Following Year', desc: 'We save your spot for a complimentary cap and gown add-on the year you graduate. No need to chase a separate photographer.' });
   }
 
-  // Universal closing items
   items.push({ title: 'Private Reveal Appointment',             desc: 'An intimate viewing experience where we unveil your gallery and guide you through selecting artwork designed to become lasting heirlooms.' });
   items.push({ title: '7–10 Business Day Delivery',             desc: 'Your curated collection is professionally prepared and ready to be enjoyed in your home — faster than you\'d expect.' });
   items.push({ title: 'Wall Art Installation &amp; Warranty',   desc: 'Every piece includes master retouching, professional installation, and a limited lifetime warranty.' });
@@ -1942,35 +1881,22 @@ function buildOfferItems() {
     </div></div>`).join('');
 }
 
-// Called after renderExperience injects the DOM
 function populateOfferItems() {
   const el = document.getElementById('offerItemsList');
   if (el) el.innerHTML = buildOfferItems();
 }
 
-// ── Loop helper — switch to a suggested service and restart from budget
-// ── Klaviyo capture from unmatch — "keep me posted" path ────────────
-// Called when user clicks "Keep Me Posted" on a future session button.
-// Sets up state for Klaviyo universal capture and renders the unified form.
 function loopToKlaviyoCapture(service) {
   state.service  = service;
-  state.budget   = 'yes';    // They've passed the interest threshold by clicking
-  state.timing   = 'later';  // Mark as future/later so submitUnified routes to Klaviyo
-  // Preserve dueDate if present — it becomes useful context in the Klaviyo profile
+  state.budget   = 'yes';
+  state.timing   = 'later';
   currentStep = STEPS.length;
   render();
 }
 
-// ── Loop helper — switch service, preserve date, re-qualify ─────────
-// The customer's due date is a fact about them, not the service. When they
-// loop from one pregnancy service to another, we keep the date and re-run
-// the qualification under the new service's rules. If the date qualifies
-// for the new service, skip the duedate step and proceed to budget.
 function loopToService(newService) {
-  // Preserve the dueDate across the loop — it's the same fact about the customer
-  const preservedDate = state.dueDate;
-
-  const preservedBudget = state.budget;  // keep budget — they already saw the price
+  const preservedDate   = state.dueDate;
+  const preservedBudget = state.budget;
 
   state.service           = newService;
   state.dueDateValid      = null;
@@ -1979,10 +1905,9 @@ function loopToService(newService) {
   state.klavWindowOpens   = null;
   state.timing            = null;
   state.gradYear          = null;
-  state.budget            = preservedBudget;  // restore — no need to re-read pricing
+  state.budget            = preservedBudget;
   state.cameFromExperience = false;
 
-  // For pregnancy → pregnancy loops, re-qualify the date under new service rules
   if (['maternity','boudoir','newborn'].includes(newService) && preservedDate) {
     state.dueDate = preservedDate;
     const q = qualifyDueDate(preservedDate);
@@ -1992,24 +1917,20 @@ function loopToService(newService) {
     state.dueDateNote     = q.noteHtml || '';
 
     if (q.valid === 'unqualified') {
-      // Date doesn't work — show the next unmatch screen
       currentStep = STEPS.length;
       render();
       return;
     }
-    // Budget already answered — skip it and go straight to result
     if (preservedBudget === 'yes') {
       currentStep = STEPS.length;
       render();
       return;
     }
-    // Budget not set — go to budget step first
     currentStep = STEPS.findIndex(s => s.id === 'budget');
     render();
     return;
   }
 
-  // For pregnancy services with no preserved date — go to duedate step
   if (['maternity','boudoir','newborn'].includes(newService)) {
     state.dueDate = null;
     currentStep = STEPS.findIndex(s => s.id === 'duedate');
@@ -2017,35 +1938,23 @@ function loopToService(newService) {
     return;
   }
 
-  // Non-pregnancy services — clear date, go to timing step
-  // Budget is already answered — they'll pass through it in one tap,
-  // or we can skip to timing directly.
   state.dueDate = null;
-  state.timing  = null;  // clear timing so they pick a session month
+  state.timing  = null;
   currentStep = STEPS.findIndex(s => s.id === 'timing');
   render();
 }
 
-
-
 // ── Maternity unmatch ────────────────────────────────────────────────
-// Maternity is unqualified. Show newborn ONLY if their due date qualifies
-// for newborn (July 25-Aug 7). Otherwise family only.
 function renderMaternityUnmatch(content) {
   document.getElementById('progressShell').style.display = 'none';
   document.getElementById('bottomNav').style.display     = 'none';
 
-  // Show newborn card if their due date is after July 19 — regardless of weeks today.
-  // Clicking newborn will re-qualify under newborn rules:
-  //   tooEarly (<22wks today) → Klaviyo maternity list
-  //   good (≥22wks + due>Jul19) → Sprout
-  // We show the card for both cases so they have a path.
   let newbornQualifies = false;
   if (state.dueDate) {
     const fa2    = firstAvailableDate();
     const july19 = new Date(fa2.getFullYear(), 6, 19);
     const due2   = new Date(state.dueDate + 'T12:00:00');
-    newbornQualifies = due2 > july19;  // date check only — week check happens on click
+    newbornQualifies = due2 > july19;
   }
 
   const newbornCard = newbornQualifies ?
@@ -2087,16 +1996,13 @@ function renderMaternityUnmatch(content) {
     '<div class="contact-links" style="margin-top:20px">' +
     '<a href="' + SMS_HREF + '" class="contact-link contact-link-primary">' +
     '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
-    'Text Us  ' + PHONE_DISPLAY +
+    'Text Us  ' + PHONE_DISPLAY +
     '</a></div>' +
     startOverHtml() +
     '</div>';
 }
 
 // ── Newborn unmatch ─────────────────────────────────────────────────
-// Baby is not arriving in our newborn window (July 25-Aug 7).
-// Only option is family. No maternity loop — if they were maternity-eligible
-// they would have gone to maternity unmatch, not here.
 function renderNewbornUnmatch(content) {
   document.getElementById('progressShell').style.display = 'none';
   document.getElementById('bottomNav').style.display     = 'none';
@@ -2126,13 +2032,11 @@ function renderNewbornUnmatch(content) {
     '<div class="contact-links" style="margin-top:20px">' +
     '<a href="' + SMS_HREF + '" class="contact-link contact-link-primary">' +
     '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
-    'Text Us  ' + PHONE_DISPLAY +
+    'Text Us  ' + PHONE_DISPLAY +
     '</a></div>' +
     startOverHtml() +
     '</div>';
 }
-
-
 
 // ── Budget unmatch → timed redirect ──────────────────────────────
 function renderBudgetUnmatch(content) {
@@ -2144,7 +2048,7 @@ function renderBudgetUnmatch(content) {
       <div class="redirect-notice">
         <span class="redirect-notice-icon">🤍</span>
         <h2 class="redirect-notice-title">We appreciate your honesty.</h2>
-        <p class="redirect-notice-body">Our sessions start at $1,290 — and we want to be upfront so you can plan with confidence. When you\'re ready to make this investment in yourself or your family, <strong>we\'d love to be your photographer.</strong></p>
+        <p class="redirect-notice-body">Our sessions start at $1,290 — and we want to be upfront so you can plan with confidence. When you're ready to make this investment in yourself or your family, <strong>we'd love to be your photographer.</strong></p>
         <p class="redirect-notice-body" style="margin-top:10px">In the meantime, explore our work and follow along on Instagram to see what we create together.</p>
       </div>
       <div class="redirect-countdown">
@@ -2170,19 +2074,11 @@ function renderBudgetUnmatch(content) {
   }, 1000);
 }
 
-// ── Early maternity → Klaviyo ─────────────────────────────────────
-// By the time we reach here, the lead has already passed budget + contact steps.
-// state.name, state.email, state.dueDate, state.klavWindowOpens are all populated.
-// We auto-submit immediately rather than asking them to re-enter info.
-// renderKlavCapture, renderKlavSenior, renderKlavUniversal are all
-// aliased to renderUnifiedForm above — unified form handles all paths.
-
 // =====================================================================
 //  NAVIGATION
 // =====================================================================
 function selectOpt(id, value, el) {
   state[id] = value;
-  // Mirror gradyear step value into state.gradYear
   if (id === 'gradyear') state.gradYear = value;
   document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
   el.classList.add('selected');
@@ -2201,9 +2097,6 @@ function goNext() {
   const active = activeSteps();
   const posNow = active.indexOf(currentStep);
 
-  // Due date step: always re-qualify on Continue to prevent blackout bypass.
-  // qualifyDueDate is also called on every date change in handleDueDateChange,
-  // but re-running here ensures stale state never sneaks through on back+continue.
   if (step && step.type === 'duedate') {
     if (!state.dueDate) return;
     const q = qualifyDueDate(state.dueDate);
@@ -2213,11 +2106,8 @@ function goNext() {
     if (state.dueDateValid === 'unqualified') {
       currentStep = STEPS.length; render(); return;
     }
-    // 'good' and 'tooEarly' fall through to budget
   }
 
-  // No separate contact step — all fields on result screen
-  // Budget routing
   if (step && (step.type === 'budget' || (step.type === 'options' && step.id === 'budget'))) {
     if (state.budget === 'no' || state.budget === 'learn') {
       currentStep = STEPS.length; render(); return;
@@ -2233,7 +2123,6 @@ function goNext() {
 }
 
 function startOver() {
-  // Reset all state and go back to the intro screen
   state.service = null; state.dueDate = null; state.dueDateValid = null;
   state.dueDateReason = null; state.dueDateNote = null; state.klavWindowOpens = null;
   state.timing = null; state.gradYear = null; state.budget = null;
@@ -2252,8 +2141,6 @@ function goBack() {
   if (currentStep >= STEPS.length) {
     const budgetIdx = STEPS.findIndex(s => s.id === 'budget');
     currentStep = budgetIdx;
-    // Clear budget so the investment step requires a fresh conscious selection —
-    // prevents any path where state carries through without seeing the investment card
     state.budget = null;
     state.cameFromExperience = false;
     render(); return;
