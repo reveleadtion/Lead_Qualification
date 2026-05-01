@@ -82,17 +82,17 @@ html, body {
 /* ── Header ─────────────────────────────────────────────────────────── */
 header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 20px;
+  padding: 4px 20px;
   border-bottom: 1px solid var(--faint);
   background: var(--bg);
   position: sticky; top: 0; z-index: 100;
 }
-.logo-wrap { display: flex; align-items: center; flex: 1; justify-content: center; }
+.logo-wrap { display: flex; align-items: center; }
 .logo-img {
   display: block;
-  height: 120px;
+  height: 160px;
   width: auto;
-  max-width: 300px;
+  max-width: 320px;
   object-fit: contain;
 }
 .header-badge {
@@ -101,7 +101,7 @@ header {
   background: var(--gold-dim);
   border: 1px solid var(--gold-bdr);
   padding: 5px 12px; border-radius: 100px; white-space: nowrap;
-  position: absolute; right: 20px;
+  flex-shrink: 0;
 }
 
 /* ── Progress bar ────────────────────────────────────────────────────── */
@@ -785,8 +785,7 @@ textarea.text-field {
   header, .progress-shell { padding-left: 32px; padding-right: 32px; }
   main { padding: 0 32px 120px; }
   .bottom-nav { padding: 18px 32px max(18px, env(safe-area-inset-bottom)); }
-  .logo-img { height: 120px; max-width: 300px; }
-  .header-badge { right: 32px; }
+  .logo-img { height: 160px; max-width: 320px; }
 }
 @media (min-width: 900px) {
   main { max-width: 560px; margin: 0 auto; padding: 0 0 140px; }
