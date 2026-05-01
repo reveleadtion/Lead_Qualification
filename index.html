@@ -87,16 +87,13 @@ header {
   background: var(--bg);
   position: sticky; top: 0; z-index: 100;
 }
-.logo-wrap { display: flex; flex-direction: column; gap: 2px; }
-.logo-name {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 15px; font-weight: 400;
-  letter-spacing: 0.05em; color: var(--text);
-}
-.logo-name em { font-style: italic; color: var(--gold); }
-.logo-sub {
-  font-size: 9.5px; letter-spacing: 0.2em;
-  text-transform: uppercase; color: var(--text2);
+.logo-wrap { display: flex; align-items: center; }
+.logo-img {
+  display: block;
+  height: 44px;
+  width: auto;
+  max-width: 220px;
+  object-fit: contain;
 }
 .header-badge {
   font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase;
@@ -787,6 +784,7 @@ textarea.text-field {
   header, .progress-shell { padding-left: 32px; padding-right: 32px; }
   main { padding: 0 32px 120px; }
   .bottom-nav { padding: 18px 32px max(18px, env(safe-area-inset-bottom)); }
+  .logo-img { height: 52px; max-width: 260px; }
 }
 @media (min-width: 900px) {
   main { max-width: 560px; margin: 0 auto; padding: 0 0 140px; }
@@ -805,8 +803,7 @@ textarea.text-field {
 
 <header>
   <div class="logo-wrap">
-    <span class="logo-name">Two Wild <em>Souls</em> Photography</span>
-    <span class="logo-sub">Let's tell your story</span>
+    <img src="images/logo.png" alt="Two Wild Souls Photography" class="logo-img">
   </div>
   <span class="header-badge">Limited Spots</span>
 </header>
