@@ -1187,7 +1187,8 @@ window.__TWS_DEFAULTS = /*EDITMODE-BEGIN*/{
 
 <script>
 // =====================================================================
-//  TWO WILD SOULS — Lead Qualification Funnel (premium revamp)
+//  TWO WILD SOULS — Lead Qualification Funnel
+//  Flow: Service → Timing → Experience → Investment → Form
 // =====================================================================
 
 const PHONE_RAW     = '2482746361';
@@ -1195,6 +1196,7 @@ const PHONE_DISPLAY = '(248) 274-6361';
 const SMS_HREF      = 'sms:+1' + PHONE_RAW;
 const EMAIL_HREF    = 'mailto:jasmine@twowildsoulsphotography.com';
 const MAIN_SITE     = 'https://twowildsoulsphotography.com';
+const SPECIALS_URL  = 'https://twowildsoulsphotography.com/specials';
 const BUDGET_REDIRECT_DELAY = 8;
 
 const KLAV_PUBLIC         = 'WgMSBs';
@@ -1218,58 +1220,46 @@ const SPOTS = { aug: 3, sep: 5, oct: 5 };
 // =====================================================================
 //  PHOTOS CONFIG
 //  ─────────────────────────────────────────────────────────────────────
-//  Add image URLs here. The funnel uses these throughout — in quote
-//  cards, investment testimonials, experience panels, and the form.
-//  Leave a slot as '' to show a gold-initial circle fallback instead.
-//
 //  HOW TO UPDATE:
 //  1. Upload your photo to your website / Showit media library
 //  2. Copy the image URL from the browser
 //  3. Paste it between the quotes for the matching slot below
 //  4. Save and redeploy
 //
-//  JASMINE — used on intro card, Jasmine moment, and form review line
-//  CLIENT PHOTOS — used in investment testimonial + experience panel
-//  The comment beside each slot tells you where that photo appears.
+//  Leave a slot as '' to show a gold-initial circle fallback.
 // =====================================================================
 const PHOTOS = {
 
   // ── Jasmine ─────────────────────────────────────────────────────────
-  // Intro card, Jasmine moment quote, form bottom review line
+  // Used: intro card · Jasmine moment quote · form review line
   jasmine: 'https://static.showit.com/file/N0mLcuchHvT5zhas9MUvfg/331377/2025_headshot_7542-min.jpg',
 
   // ── Client photos ────────────────────────────────────────────────────
-  // Appears in: maternity + newborn investment testimonial & experience panel
+  // Used: maternity + newborn investment testimonial & experience panel
   megan_l:     'https://static.showit.com/file/SCYIxIIKVAON8SjmNpu4NA/331377/smith_final_2067.jpg',
-  
-  // Appears in: maternity + newborn investment testimonial & experience panel
-  jaclyn_s:     'https://static.showit.com/file/synOcENexdmtb3gSqQrl7g/331377/hein_final_8427a.jpg',
-  
-  // Appears in: maternity + newborn investment testimonial & experience panel
-  samantha_l:     'https://static.showit.com/file/eXYg63OrfzwlDYBK7kSXYQ/331377/leech_final_1290.jpg',
+  jaclyn_s:    'https://static.showit.com/file/synOcENexdmtb3gSqQrl7g/331377/hein_final_8427a.jpg',
+  samantha_l:  'https://static.showit.com/file/eXYg63OrfzwlDYBK7kSXYQ/331377/leech_final_1290.jpg',
 
-  // Appears in: maternity / beauty experience panel deep testimonial
+  // Used: maternity / beauty experience panel deep testimonial
   amy_p:       'https://static.showit.com/file/v-wdSRYLaL5R4GEWvUJMgA/331377/amy_final_2413.jpg',
 
-  // Appears in: branding investment testimonial
+  // Used: branding testimonials
   paula_b:     'https://static.showit.com/file/DM4WmUnzvTpyggdQru1ilg/331377/paula_final_6912_min.jpg',
-  
-  // Appears in: branding investment testimonial
-  jojo_d:     'https://static.showit.com/file/TAYQQRebZ6Z6uZiBvRywPQ/331377/dries_final_0586.jpg',
+  jojo_d:      'https://static.showit.com/file/TAYQQRebZ6Z6uZiBvRywPQ/331377/dries_final_0586.jpg',
 
-  // Appears in: senior investment testimonial
+  // Used: senior investment testimonial
   bonnie_w:    'https://static.showit.com/file/M3hqmq27RDWQl6lExTniLg/331377/west_final_8030-min.jpg',
 
-  // Appears in: senior experience panel deep testimonial
+  // Used: senior experience panel deep testimonial
   karen_s:     'https://static.showit.com/file/26jtxgbYNzvoNsgM_lNWcw/331377/slattery_final_7300_update_2.jpg',
 
-  // Appears in: family investment testimonial
+  // Used: family investment testimonial
   krystal_w:   'https://static.showit.com/file/rxYsOKXVnf-OFgC6oBU3kA/331377/warren_final_9772_min.jpg',
 
-  // Appears in: branding experience panel deep testimonial
+  // Used: branding experience panel deep testimonial
   courtney:    'https://static.showit.com/file/xkD4jwAMV1nfF7SZY43vJw/331377/courtney_final_1393.jpg',
 
-  // Appears in: family experience panel deep testimonial
+  // Used: family experience panel deep testimonial
   stephanie_p: 'https://static.showit.com/file/EnNf15-3xYN9ASTijCOqEw/331377/omadlao_final_5658.jpg',
 
 };
@@ -1307,24 +1297,26 @@ const EXPERIENCE_NARRATIVES = {
   beauty:    'Your session is entirely yours. We begin with a consultation to understand your vision, build the look with hair and makeup, and shoot in a way that\u2019s relaxed and unhurried. You leave with images that feel like you \u2014 on your very best day.',
 };
 
-const INVEST_TESTIMONIALS = {
-  maternity: { key:'megan_l',  initials:'ML', name:'Megan L.',   ctx:'Maternity Session', quote:'We had an absolute blast at our maternity shoot and our photos came out stunning' },
-  boudoir:   { key:'samantha_l',  initials:'SL', name:'Samantha L.',   ctx:'Maternity Session', quote:'Our maternity shoot with Jasmine was a magical experience!! ' },
-  newborn:   { key:'jaclyn_s',  initials:'JS', name:'Jaclyn S.',   ctx:'In-Home Newborn',     quote:'From the start, Jasmine went above and beyond. Our pre-shoot meeting was so helpful...' },
-  senior:    { key:'karen_s', initials:'KS', name:'Karen S.',  ctx:'Senior Portraits',  quote:'She took so much time with us and made sure everything was perfect. The pictures turned out gorgeous and we could not have been happier.' },
-  family:    { key:'jojo_d',initials:'JD', name:'JoJo D.', ctx:'Family Session',    quote:'Jasmine was AMAZING! So easy to work with!' },
-  branding:  { key:'paula_b',  initials:'PB', name:'Paula B.',   ctx:'Branding Session',  quote:'When I saw my final photos, I was genuinely blown away. Each image felt warm, authentic, and beautifully composed.' },
-  beauty:    { key:'amy_p',    initials:'AP', name:'Amy P.',     ctx:'Portrait Session',  quote:'The entire experience was filled with laughter and fun. I couldn\u2019t be happier with the incredible photos they captured.' },
+// Testimonials shown in the experience step (before pricing)
+const EXPERIENCE_TESTIMONIALS = {
+  maternity: { key:'megan_l',     initials:'ML', name:'Megan L.',     ctx:'Maternity Session',        quote:'We had an absolute blast at our maternity shoot and our photos came out stunning, as did the following newborn photos for our twins. Jasmine came to our home and made every step easy, I cannot recommend her enough! She had outfits for me and the girls, and provided hair and makeup - the less this new mom has to worry about, the better.' },
+  boudoir:   { key:'samantha_l',  initials:'SL', name:'Samantha L.',  ctx:'Maternity Session',        quote:'Our maternity shoot with Jasmine was a magical experience!! From hair and makeup, to a full closet, everything was taken care of to make mom feel like a princess! Her charisma was unmatched and we received literally magazine model ready pictures! Everything was incredible from start to finish!' },
+  newborn:   { key:'jaclyn_s',    initials:'JS', name:'Jaclyn S.',    ctx:'In-Home Newborn',           quote:'She walked me through the entire day so I knew exactly what to expect and even helped plan outfits down to the jewelry. It made everything feel so easy and stress-free. On the day of the shoot, she was incredible. She took her time making sure we got all the shots we wanted while also being mindful of working with a toddler and a newborn. The whole experience felt calm and enjoyable.' },
+  senior:    { key:'karen_s',     initials:'KS', name:'Karen S.',     ctx:'Senior + Family Session',  quote:'The day of the shoot was absolutely flawless\u2026we went from taking pictures at our home, to a local trail, to downtown, and ended at a local lake. What really stood out for our family is how personable, knowledgeable, and professional Jasmine was during the entire experience. The pictures were of superb quality and absolutely stunning.' },
+  family:    { key:'jojo_d',      initials:'JD', name:'JoJo D.',      ctx:'Family Session',           quote:'Jasmine was AMAZING! So easy to work with! She even made our children so comfortable and they were laughing and smiling and they generally don\u2019t like taking professional pictures! I would highly recommend her and her services.' },
+  branding:  { key:'paula_b',     initials:'PB', name:'Paula B.',     ctx:'Branding Session',         quote:'She has an incredible ability to make you feel instantly comfortable, guiding you just enough while letting your natural expressions shine through. Nothing felt posed or stiff, she captures moments that truly reflect who you are. When I saw my final photos, I was genuinely blown away. Each image felt warm, authentic, and beautifully composed.' },
+  beauty:    { key:'amy_p',       initials:'AP', name:'Amy P.',       ctx:'Portrait Session',         quote:'The entire experience was filled with laughter and fun, making it more than just a photoshoot \u2014 a celebration of being myself. I couldn\u2019t be happier with the incredible photos they captured, and I\u2019ll cherish them forever.' },
 };
 
-const DEEP_TESTIMONIALS = {
-  maternity: { key:'megan_l',       initials:'ML', name:'Megan L.',       ctx:'Maternity Session',       quote:'We had an absolute blast at our maternity shoot and our photos came out stunning, as did the following newborn photos for our twins. Jasmine came to our home and made every step easy, I cannot recommend her enough! She had outfits for me and the girls, and provided hair and makeup - the less this new mom has to worry about, the better.' },
-  boudoir:   { key:'samantha_l',       initials:'SL', name:'Samantha L.',       ctx:'Maternity Session',       quote:'Our maternity shoot with Jasmine was a magical experience!! From hair and makeup, to a full closet, everything was taken care of to make mom feel like a princess! Her charisma was unmatched and we received literally magazine model ready pictures! Everything was incredible from start to finish!' },
-  newborn:   { key:'jaclyn_s',     initials:'JS', name:'Jaclyn S.',     ctx:'In-Home Newborn',           quote:'She walked me through the entire day so I knew exactly what to expect and even helped plan outfits down to the jewelry. It made everything feel so easy and stress-free. On the day of the shoot, she was incredible. She took her time making sure we got all the shots we wanted while also being mindful of working with a toddler and a newborn. The whole experience felt calm and enjoyable.The hair and makeup made such a difference and helped me feel confident being in photos postpartum. The photo review was just as great—she guided us through the best images and helped us decide what to order without ever feeling rushed.' },
-  senior:    { key:'karen_s',     initials:'KS', name:'Karen S.',     ctx:'Senior + Family Session', quote:'We were looking for a local photographer to have our twin sons senior pictures and contacted Two Wild Souls Photography. From the initial consultation call with Jasmine, we decided to include a family session. Jasmine provided an in-home consultation for my sons and a complete plan of what to expect the day of the shoot. The day of the shoot was absolutely flawless...we went from taking pictures at our home, to a local trail, to downtown, and ended at a local lake. What really stood out for our family is how personable, knowledgeable, and professional Jasmine was during the entire experience. The pictures were of superb quality and absolutely stunning. The pictures reflect her extraordinary talent for capturing the moments. Jasmine is a highly-talented specialty photographer and we highly recommend her service.' },
-  family:    { key:'jojo_d',    initials:'JD',  name:'JoJo D.',     ctx:'Family Session',          quote:'Jasmine was AMAZING! So easy to work with! She even made our children so comfortable and they were laughing and smiling and they generally don\u2019t like taking professional pictures! I would highly recommend her and her services.' },
-  branding:  { key:'paula_b',  initials:'PB', name:'Paula B.',   ctx:'Branding Session',        quote:'I recently had my branding and headshot photos done with Two Wild Souls Photography at their Rochester Studio, and the experience was truly exceptional. I can\u2019t say enough about Two Wild Souls and the talent Jasmine brings behind the camera. She has an incredible ability to make you feel instantly comfortable, guiding you just enough while letting your natural expressions shine through. Nothing felt posed or stiff, she captures moments that truly reflect who you are. Her eye for lighting, detail, and emotion is extraordinary. When I saw my final photos, I was genuinely blown away. Each image felt warm, authentic, and beautifully composed, everything I hoped for in a branding session and more. My session also included hair and makeup, and Courtney did a fantastic job. She created a flawless look that photographed beautifully, making the whole experience flow so seamlessly. I absolutely love my photos, and I already can\u2019t wait for my next session.' },
-  beauty:    { key:'amy_p',       initials:'AP', name:'Amy P.',       ctx:'Portrait Session',        quote:'The entire experience was filled with laughter and fun, making it more than just a photoshoot \u2014 a celebration of being myself. I couldn\u2019t be happier with the incredible photos they captured, and I\u2019ll cherish them forever.' },
+// Testimonials shown beside the pricing reveal (investment step)
+const INVEST_TESTIMONIALS = {
+  maternity: { key:'megan_l',    initials:'ML', name:'Megan L.',    ctx:'Maternity Session',  quote:'Definitely worth every penny.' },
+  boudoir:   { key:'samantha_l', initials:'SL', name:'Samantha L.', ctx:'Maternity Session',  quote:'Everything was incredible from start to finish!' },
+  newborn:   { key:'jaclyn_s',   initials:'JS', name:'Jaclyn S.',   ctx:'In-Home Newborn',    quote:'From the start, Jasmine went above and beyond.' },
+  senior:    { key:'karen_s',    initials:'KS', name:'Karen S.',    ctx:'Senior Portraits',   quote:'She took so much time with us and made sure everything was perfect. The pictures turned out gorgeous.' },
+  family:    { key:'krystal_w',  initials:'KW', name:'Krystal W.',  ctx:'Family Session',     quote:'She is such a wonderful soul \u2014 she was still able to capture beautiful moments despite everything.' },
+  branding:  { key:'paula_b',    initials:'PB', name:'Paula B.',    ctx:'Branding Session',   quote:'When I saw my final photos, I was genuinely blown away. Each image felt warm, authentic, and beautifully composed.' },
+  beauty:    { key:'amy_p',      initials:'AP', name:'Amy P.',      ctx:'Portrait Session',   quote:'The entire experience was filled with laughter and fun. I couldn\u2019t be happier with the incredible photos they captured.' },
 };
 
 function getBeingChosenText() {
@@ -1359,20 +1351,20 @@ const state = {
   klavWindowOpens: null, dueDateNote: '',
   timing: null, gradYear: null, budget: null,
   firstName: null, lastName: null, name: null, email: null, phone: null,
-  prefMonth: null, prefYear: null, cameFromExperience: false,
+  prefMonth: null, prefYear: null,
 };
 
-// Chapter labels for progress
 const CHAPTER_LABELS = {
-  service:  'Begin',
-  duedate:  'Timing',
-  gradyear: 'Timing',
-  timing:   'Calendar',
-  budget:   'Investment',
+  service:     'Begin',
+  duedate:     'Timing',
+  gradyear:    'Timing',
+  timing:      'Calendar',
+  experience:  'Experience',
+  investment:  'Investment',
 };
 
 // =====================================================================
-//  STEPS
+//  STEPS — new order: service → timing → experience → investment → form
 // =====================================================================
 const STEPS = [
   { id: 'service', type: 'options',
@@ -1429,7 +1421,10 @@ const STEPS = [
       return opts;
     }
   },
-  { id: 'budget', type: 'budget', label: 'Investment' },
+  // Experience step — shown to everyone, builds desire before pricing
+  { id: 'experience', type: 'experience' },
+  // Investment step — pricing reveal after desire is built
+  { id: 'investment', type: 'investment' },
 ];
 
 function activeSteps() {
@@ -1457,8 +1452,7 @@ function photoHtml(key, initials, size, classBase) {
   const sz = size + 'px';
   const fs = Math.round(size * 0.35) + 'px';
   if (url) {
-    return '<img src="' + url + '" alt="' + initials + '" class="' + classBase + '" ' +
-      'style="width:' + sz + ';height:' + sz + '">';
+    return '<img src="' + url + '" alt="' + initials + '" class="' + classBase + '" style="width:' + sz + ';height:' + sz + '">';
   }
   return '<div class="' + classBase + '-fb" style="width:' + sz + ';height:' + sz + ';font-size:' + fs + '">' + initials + '</div>';
 }
@@ -1473,7 +1467,7 @@ function jasminePhotoHtml(cls, sizePx) {
 }
 
 // =====================================================================
-//  DUE DATE QUALIFICATION
+//  DUE DATE QUALIFICATION — unchanged
 // =====================================================================
 function firstAvailableDate() {
   const today = new Date(); today.setHours(0,0,0,0);
@@ -1510,9 +1504,9 @@ function qualifyDueDate(dueDateStr) {
   }
 
   if (service === 'newborn') {
-    const due    = new Date(dueDateStr + 'T12:00:00');
+    const due      = new Date(dueDateStr + 'T12:00:00');
     const weeksNow = weeksAlongOnDate(dueDateStr, today);
-    const july19 = new Date(firstAvail.getFullYear(), 6, 19);
+    const july19   = new Date(firstAvail.getFullYear(), 6, 19);
     if (weeksNow < 22) {
       const windowOpens = new Date(due.getTime() - 18 * MS_WEEK);
       return {
@@ -1531,15 +1525,15 @@ function qualifyDueDate(dueDateStr) {
 //  RENDER
 // =====================================================================
 function render() {
-  const content  = document.getElementById('mainContent');
-  const shell    = document.getElementById('progressShell');
-  const nav      = document.getElementById('bottomNav');
-  const fill     = document.getElementById('progressFill');
-  const stepLbl  = document.getElementById('stepLabel');
-  const pctLbl   = document.getElementById('stepPct');
-  const dotsEl   = document.getElementById('chapterDots');
-  const btnBack  = document.getElementById('btnBack');
-  const btnNext  = document.getElementById('btnNext');
+  const content      = document.getElementById('mainContent');
+  const shell        = document.getElementById('progressShell');
+  const nav          = document.getElementById('bottomNav');
+  const fill         = document.getElementById('progressFill');
+  const stepLbl      = document.getElementById('stepLabel');
+  const pctLbl       = document.getElementById('stepPct');
+  const dotsEl       = document.getElementById('chapterDots');
+  const btnBack      = document.getElementById('btnBack');
+  const btnNext      = document.getElementById('btnNext');
   const btnNextLabel = document.getElementById('btnNextLabel');
 
   // INTRO
@@ -1555,14 +1549,13 @@ function render() {
     const service = state.service;
     const budg    = state.budget;
     const dv      = state.dueDateValid;
-    if (!budg) { currentStep = STEPS.findIndex(s => s.id === 'budget'); render(); return; }
-    if (budg === 'no')    { renderBudgetUnmatch(content); return; }
-    if (budg === 'learn') { renderExperience(content);   return; }
+    if (!budg) { currentStep = STEPS.findIndex(s => s.id === 'investment'); render(); return; }
+    if (budg === 'no') { renderBudgetUnmatch(content); return; }
     if (dv === 'unqualified') {
       if (service === 'newborn') { renderNewbornUnmatch(content); return; }
       renderMaternityUnmatch(content); return;
     }
-    if (dv === 'tooEarly') { renderUnifiedForm(content); return; }
+    if (dv === 'tooEarly')  { renderUnifiedForm(content); return; }
     if (service === 'senior') {
       if (state.gradYear === 'later') { renderUnifiedForm(content); return; }
       if (state.gradYear === 'soon' && state.timing === 'later') { renderUnifiedForm(content); return; }
@@ -1573,7 +1566,7 @@ function render() {
   }
 
   // ACTIVE QUIZ STEP
-  const step = STEPS[currentStep];
+  const step   = STEPS[currentStep];
   const active = activeSteps();
   const posNow = active.indexOf(currentStep);
   const total  = active.length;
@@ -1586,9 +1579,8 @@ function render() {
 
   btnBack.style.display = posNow === 0 ? 'none' : '';
   btnNext.disabled = needsSelection(step);
-  btnNextLabel.textContent = posNow === total - 1 ? 'See My Availability' : 'Continue';
+  btnNextLabel.textContent = posNow === total - 1 ? 'See Your Investment' : 'Continue';
 
-  // chapter dots
   dotsEl.innerHTML = '';
   active.forEach((stepIdx, i) => {
     const s = STEPS[stepIdx];
@@ -1599,17 +1591,19 @@ function render() {
     dotsEl.appendChild(dot);
   });
 
-  if (step.type === 'duedate')      renderDueDateStep(content, step);
-  else if (step.type === 'budget')  renderBudgetStep(content);
-  else if (step.type === 'options') renderOptionsStep(content, step);
+  if      (step.type === 'duedate')    renderDueDateStep(content, step);
+  else if (step.type === 'options')    renderOptionsStep(content, step);
+  else if (step.type === 'experience') renderExperienceStep(content);
+  else if (step.type === 'investment') renderInvestmentStep(content);
 
   scrollToTop();
 }
 
 function needsSelection(step) {
-  if (step.type === 'budget')  return !state.budget;
-  if (step.type === 'options') return !state[step.id];
-  if (step.type === 'duedate') return !state.dueDate;
+  if (step.type === 'options')    return !state[step.id];
+  if (step.type === 'duedate')    return !state.dueDate;
+  if (step.type === 'investment') return !state.budget;
+  // experience step: always allow continue
   return false;
 }
 
@@ -1627,7 +1621,6 @@ function renderIntro() {
         not a sales call. We\u2019ll talk through your moment, the experience we\u2019d build for you,
         and exactly what to expect. <strong>No surprises. No pressure.</strong>
       </p>
-
       <div class="intro-jasmine">
         ${photo}
         <div class="intro-jasmine-text">
@@ -1635,7 +1628,6 @@ function renderIntro() {
           <div class="intro-jasmine-role">Owner &amp; Photographer</div>
         </div>
       </div>
-
       <div class="intro-cta-wrap">
         <button class="btn-primary" onclick="goNext()" type="button">
           <span>Begin the conversation</span>
@@ -1656,7 +1648,6 @@ function renderIntro() {
           </span>
         </div>
       </div>
-
       <div class="ornament">
         <span class="ornament-line"></span>
         <span class="ornament-mark">&middot;</span>
@@ -1670,7 +1661,7 @@ function renderIntro() {
 //  STEP RENDERERS
 // =====================================================================
 function isFirstAfterService() {
-  const active = activeSteps();
+  const active     = activeSteps();
   const serviceIdx = STEPS.findIndex(s => s.id === 'service');
   for (let i = 0; i < active.length; i++) {
     if (active[i] > serviceIdx) return currentStep === active[i];
@@ -1717,7 +1708,7 @@ function renderOptionsStep(content, step) {
   }).join('');
   content.innerHTML = `
     <div class="q-screen">
-      <p class="q-eyebrow">${step.eyebrow || 'Step ' + (currentStep + 1)}</p>
+      <p class="q-eyebrow">${step.eyebrow || ''}</p>
       <h2 class="q-headline">${step.label}</h2>
       ${step.hint ? `<p class="q-hint">${step.hint}</p>` : ''}
       <div class="options">${optHtml}</div>
@@ -1768,26 +1759,26 @@ function handleDueDateChange() {
   btn.disabled = false;
 }
 
-// ---------------------------------------------------------------------
-// Budget / Investment step
-// ---------------------------------------------------------------------
-function renderBudgetStep(content) {
-  if (state.budget === 'yes') { setTimeout(goNext, 0); return; }
-  const svc = state.service;
-  const scene = SENSORIAL_SCENES[svc] || SENSORIAL_SCENES.beauty;
-
-  const t = INVEST_TESTIMONIALS[svc] || INVEST_TESTIMONIALS.beauty;
-  const tImg = photoHtml(t.key, t.initials, 44, 'invest-test-photo');
+// =====================================================================
+//  EXPERIENCE STEP — sensorial + what's included + testimonial + Jasmine
+//  Shown to everyone before pricing. No decision required — Continue advances.
+// =====================================================================
+function renderExperienceStep(content) {
+  const svc       = state.service || 'family';
+  const scene     = SENSORIAL_SCENES[svc]     || SENSORIAL_SCENES.beauty;
+  const narrative = EXPERIENCE_NARRATIVES[svc] || EXPERIENCE_NARRATIVES.beauty;
+  const t         = EXPERIENCE_TESTIMONIALS[svc] || EXPERIENCE_TESTIMONIALS.beauty;
+  const tImg      = photoHtml(t.key, t.initials, 56, 'deep-test-photo');
 
   const baseChips = [
-    { label: 'Professional Hair & Makeup',           hi: true  },
-    { label: 'Heirloom Prints, Albums & Wall Art',   hi: true  },
-    { label: 'White Glove Session Planning',         hi: false },
-    { label: 'In-Home Planning Consult',             hi: false },
-    { label: 'No Time Constraints',                  hi: false },
-    { label: 'Private Gallery Reveal',               hi: false },
-    { label: 'In-Studio & Outdoor Locations',        hi: false },
-    { label: 'Wall Art Installation & Warranty',     hi: false },
+    { label: 'Professional Hair & Makeup',         hi: true  },
+    { label: 'Heirloom Prints, Albums & Wall Art', hi: true  },
+    { label: 'White Glove Session Planning',       hi: false },
+    { label: 'In-Home Planning Consult',           hi: false },
+    { label: 'No Time Constraints',                hi: false },
+    { label: 'Private Gallery Reveal',             hi: false },
+    { label: 'In-Studio & Outdoor Locations',      hi: false },
+    { label: 'Wall Art Installation & Warranty',   hi: false },
   ];
   if (svc === 'maternity' || svc === 'boudoir') {
     baseChips.splice(2, 0, { label: 'Designer Maternity Gown Collection', hi: true });
@@ -1799,15 +1790,76 @@ function renderBudgetStep(content) {
     baseChips.push({ label: 'Model for a Day Available',         hi: false });
     baseChips.push({ label: 'Family Portraits Add-On Available', hi: false });
   }
-
   const chips = baseChips.map(c =>
     `<span class="invest-chip${c.hi ? ' hi' : ''}">${c.label}</span>`
   ).join('');
 
+  const processItems = [
+    { n:'i',   title:'Begin the conversation',       desc:'A relaxed call to understand your vision and make sure we\u2019re the right fit.' },
+    { n:'ii',  title:'Expertly curated experience',  desc:'Thoughtful planning, wardrobe guidance, and gentle direction so you feel confident and present.' },
+    { n:'iii', title:'Heirloom delivered',            desc:'A guided artwork selection \u2014 finished pieces for your home that are beautiful, tangible, and lasting.' },
+  ];
+  const processHtml = processItems.map(p => `
+    <div class="process-step">
+      <div class="process-num">${p.n}</div>
+      <div class="process-text"><strong>${p.title}</strong><em>${p.desc}</em></div>
+    </div>
+  `).join('');
+
+  content.innerHTML = `
+    <div class="exp-screen">
+      <p class="q-eyebrow">The experience</p>
+      <h2 class="q-headline">Here\u2019s what it actually <em>looks like.</em></h2>
+
+      <div class="scene-card">
+        <span class="scene-eyebrow">What it feels like</span>
+        <p class="scene-text">\u201c${scene}\u201d</p>
+      </div>
+
+      <p style="font-size:15px;color:var(--muted);line-height:1.75;margin-bottom:20px;text-wrap:pretty">${narrative}</p>
+
+      <div style="margin-bottom:24px">
+        <div style="font-size:9.5px;letter-spacing:0.28em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;display:inline-flex;align-items:center;gap:10px"><span style="width:18px;height:1px;background:var(--gold);display:inline-block"></span>What\u2019s included</div>
+        <div class="invest-chips">${chips}</div>
+      </div>
+
+      <div class="offer-process" style="margin-bottom:24px">
+        <div class="offer-process-lbl">Your white glove process</div>
+        <div class="process-steps">${processHtml}</div>
+      </div>
+
+      <div class="deep-test" onclick="openQuoteModal('exp_test')">
+        ${tImg}
+        <div class="deep-test-body">
+          <p class="deep-test-quote">\u201c${t.quote}\u201d</p>
+          <div class="deep-test-byline">
+            <span class="deep-test-name">${t.name}</span>
+            <span class="deep-test-ctx">${t.ctx}</span>
+          </div>
+          <div class="invest-test-cue" style="margin-top:10px">
+            Read the full story
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      ${jasmineMomentHtml()}
+    </div>
+  `;
+}
+
+// =====================================================================
+//  INVESTMENT STEP — pricing reveal after desire is built
+//  Two choices only: yes (→ form) or no (→ /specials)
+// =====================================================================
+function renderInvestmentStep(content) {
+  const svc = state.service;
+  const t   = INVEST_TESTIMONIALS[svc] || INVEST_TESTIMONIALS.beauty;
+  const tImg = photoHtml(t.key, t.initials, 44, 'invest-test-photo');
+
   const choices = [
-    { value: 'yes',   label: 'That feels right \u2014 let\u2019s talk',          sub: 'Move forward and start the conversation' },
-    { value: 'learn', label: 'I\u2019d like to know more first',                 sub: 'Walk me through the full experience' },
-    { value: 'no',    label: 'That\u2019s outside my budget',                    sub: 'No worries \u2014 we\u2019ll point you in the right direction' },
+    { value: 'yes', label: 'That feels right \u2014 let\u2019s talk',   sub: 'Move forward and start the conversation' },
+    { value: 'no',  label: 'That\u2019s outside my budget',              sub: 'We\u2019ll point you to our limited edition sessions' },
   ];
   const btns = choices.map(c => {
     const cls = 'opt' + (state.budget === c.value ? ' selected' : '');
@@ -1825,12 +1877,8 @@ function renderBudgetStep(content) {
 
   content.innerHTML = `
     <div class="q-screen">
-      <p class="q-eyebrow">A glimpse of the day</p>
-
-      <div class="scene-card">
-        <span class="scene-eyebrow">What it feels like</span>
-        <p class="scene-text">"${scene}"</p>
-      </div>
+      <p class="q-eyebrow">Your investment</p>
+      <h2 class="q-headline">Here\u2019s what this <em>looks like.</em></h2>
 
       <div class="invest-card">
         <span class="invest-eyebrow">Your investment</span>
@@ -1840,14 +1888,13 @@ function renderBudgetStep(content) {
         </div>
         <p class="invest-avg">Average client investment is <strong>around $2,500</strong> \u2014 all-inclusive, no surprises.</p>
         <p class="invest-journey">From your first planning call through finished portraits delivered and installed in your home \u2014 every detail in between is handled for you. One investment, nothing extra.</p>
-        <div class="invest-chips">${chips}</div>
 
         <div class="invest-divider"></div>
 
         <div class="invest-test" onclick="openQuoteModal('invest_test')">
           ${tImg}
           <div class="invest-test-body">
-            <p class="invest-test-quote">"${t.quote}"</p>
+            <p class="invest-test-quote">\u201c${t.quote}\u201d</p>
             <div class="invest-test-byline">
               <span class="invest-test-name">${t.name}</span>
               <span class="invest-test-ctx">${t.ctx}</span>
@@ -1926,9 +1973,9 @@ function buildAutoNote() {
 }
 
 function getResultCopy() {
-  const svc = state.service;
+  const svc    = state.service;
   const timing = state.timing;
-  const dv = state.dueDateValid;
+  const dv     = state.dueDateValid;
   const spotMap = {
     may: MAY_SPOTS + ' spot' + (MAY_SPOTS > 1 ? 's' : '') + ' remaining in May',
     aug: SPOTS.aug + ' spots remaining in August',
@@ -1954,7 +2001,9 @@ function getResultCopy() {
     return { eyebrow: 'Last-minute window', headline: 'Grab this <em>before it\u2019s gone.</em>', body: 'We have a rare last-minute opening this May. Share your details below and we\u2019ll be in touch quickly to lock it in.', spot: spotMap.may };
   }
   const spot = timing ? (spotMap[timing] || '') : '';
-  const body = spot ? `We have <strong>${spot}</strong>. Share your details below and Jasmine will be in touch within one business day.` : 'We\u2019d love to start the conversation. Share your details below and Jasmine will be in touch personally.';
+  const body = spot
+    ? `We have <strong>${spot}</strong>. Share your details below and Jasmine will be in touch within one business day.`
+    : 'We\u2019d love to start the conversation. Share your details below and Jasmine will be in touch personally.';
   return { eyebrow: 'Reserve your conversation', headline: 'We\u2019d love to <em>work with you.</em>', body, spot };
 }
 
@@ -1962,7 +2011,7 @@ function buildMonthPickerHtml() {
   const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const MIN_WEEKS = 8;
   const today = new Date(); today.setHours(0,0,0,0);
-  const FLOOR = new Date(2026, 7, 1);
+  const FLOOR   = new Date(2026, 7, 1);
   const minDate = FLOOR > today ? FLOOR : new Date(today.getTime() + MIN_WEEKS * 7 * 24 * 3600 * 1000);
   const opts = ['<option value="" disabled selected>Select a month &amp; year</option>'];
   for (let offset = 0; offset < 30; offset++) {
@@ -2027,7 +2076,6 @@ function renderUnifiedForm(el) {
       <p class="result-body">${copy.body}</p>
       ${spotBadge}
       ${beingChosen}
-
       <div class="uform" id="unifiedForm">
         <div class="field-row">
           <input type="text"  class="field" id="uf-first" placeholder="First name"  autocomplete="given-name"  oninput="checkUnifiedForm()">
@@ -2049,7 +2097,6 @@ function renderUnifiedForm(el) {
         <div id="unified-status"></div>
         ${jasmineReview}
       </div>
-
       <div class="inquire">
         <span class="inquire-label">Or reach us directly</span>
         <div class="inquire-row">
@@ -2059,7 +2106,6 @@ function renderUnifiedForm(el) {
           </a>
         </div>
       </div>
-
       <button class="start-over" onclick="startOver()" type="button">\u21ba Start over</button>
     </div>
   `;
@@ -2118,7 +2164,7 @@ function buildSeniorProps() {
   };
 }
 function buildUniversalProps() {
-  const svc = state.service || 'family';
+  const svc       = state.service || 'family';
   const prefMonth = state.prefMonth || '';
   const prefYear  = state.prefYear  || '';
   const props = {
@@ -2247,7 +2293,6 @@ async function submitUnified() {
 }
 
 async function doSproutSubmit(first, last, email, phone, session, notes, statusEl) {
-  // Demo / preview environment: skip real fetch, simulate success
   if (location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname.endsWith('.dev') || location.hostname.includes('preview')) {
     if (statusEl) { statusEl.style.color = 'var(--gold)'; statusEl.textContent = '\u2713 Inquiry received (preview mode)'; }
     setTimeout(() => renderSuccess('Your information is saved. Jasmine will be in touch personally within one business day \u2014 there\u2019s nothing more to do until then.'), 700);
@@ -2264,124 +2309,9 @@ async function doSproutSubmit(first, last, email, phone, session, notes, statusE
     if (statusEl) statusEl.textContent = '\u2713 Sending you to our thank-you page\u2026';
     setTimeout(() => { window.location.href = MAIN_SITE + '/thank-you'; }, 800);
   } catch (e) {
-    // Fallback for environments without /api/sprout
     if (statusEl) { statusEl.style.color = 'var(--gold)'; statusEl.textContent = '\u2713 Inquiry received'; }
     setTimeout(() => renderSuccess('Your information is saved. Jasmine will be in touch personally within one business day.'), 700);
   }
-}
-
-// =====================================================================
-//  EXPERIENCE / DEEPER PANEL
-// =====================================================================
-function renderExperience(content) {
-  document.getElementById('progressShell').style.display = 'none';
-  document.getElementById('bottomNav').style.display     = 'none';
-
-  const svc = state.service || 'family';
-  const narrative = EXPERIENCE_NARRATIVES[svc] || EXPERIENCE_NARRATIVES.beauty;
-  const dt = DEEP_TESTIMONIALS[svc] || DEEP_TESTIMONIALS.beauty;
-  const dtImg = photoHtml(dt.key, dt.initials, 56, 'deep-test-photo');
-
-  content.innerHTML = `
-    <div class="exp-screen">
-      <p class="q-eyebrow">The Experience</p>
-      <h2 class="q-headline">Here\u2019s what it actually <em>looks like.</em></h2>
-      <p class="q-hint" style="font-style:normal;font-size:15px;color:var(--muted);line-height:1.75;margin-bottom:6px">${narrative}</p>
-
-      <div class="deep-test" onclick="openQuoteModal('deep_test')">
-        ${dtImg}
-        <div class="deep-test-body">
-          <p class="deep-test-quote">"${dt.quote}"</p>
-          <div class="deep-test-byline">
-            <span class="deep-test-name">${dt.name}</span>
-            <span class="deep-test-ctx">${dt.ctx}</span>
-          </div>
-          <div class="invest-test-cue" style="margin-top:10px">
-            Read the full story
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          </div>
-        </div>
-      </div>
-
-      <div class="offer-panel">
-        <div class="offer-hed">Every detail is intentional.</div>
-        <div class="offer-sub">Starting at $1,290 \u2014 average client investment $2,500.</div>
-        <div class="offer-items" id="offerItemsList"></div>
-
-        <div class="offer-process">
-          <div class="offer-process-lbl">Your white glove process</div>
-          <div class="process-steps">
-            <div class="process-step"><div class="process-num">i</div>
-              <div class="process-text"><strong>Begin the conversation</strong>
-                <em>A relaxed consultation to understand your vision and ensure we\u2019re the right fit.</em></div></div>
-            <div class="process-step"><div class="process-num">ii</div>
-              <div class="process-text"><strong>Expertly curated experience</strong>
-                <em>Thoughtful planning, wardrobe guidance, and gentle direction so you feel confident and present.</em></div></div>
-            <div class="process-step"><div class="process-num">iii</div>
-              <div class="process-text"><strong>Heirloom delivered</strong>
-                <em>A guided artwork selection \u2014 finished pieces for your home that are beautiful, tangible, and lasting.</em></div></div>
-          </div>
-        </div>
-
-        <div class="offer-investment">Begins at <strong>$1,290</strong> \u00b7 Average investment <strong>$2,500</strong> \u00b7 No hidden fees \u00b7 No surprises.</div>
-      </div>
-
-      <div class="exp-btn-group">
-        <button class="uform-submit" onclick="experienceDecision('yes')" type="button">
-          <span>I\u2019m Ready \u2014 Let\u2019s Talk</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </button>
-        <button class="btn-ghost" onclick="experienceDecision('no')" type="button">Not the right time</button>
-      </div>
-    </div>
-  `;
-
-  populateOfferItems();
-}
-
-function experienceDecision(val) {
-  state.budget = val;
-  state.cameFromExperience = true;
-  currentStep = STEPS.length;
-  render();
-}
-
-function buildOfferItems() {
-  const svc = state.service;
-  const items = [];
-  items.push({ title: 'Professional Hair &amp; Makeup', desc: 'Arrive camera-ready with complimentary professional hair and makeup artistry \u2014 confident, polished, and fully taken care of.' });
-  items.push({ title: 'In-Home Planning &amp; Design Consult', desc: 'We begin with an in-home consultation to understand your vision, curate styling, and plan how your portraits will live in your space.' });
-  if (svc !== 'newborn') {
-    items.push({ title: 'Outdoor Locations Available', desc: 'Every session can include stunning outdoor settings \u2014 golden hour fields, wooded trails, urban backdrops, or your favorite meaningful spot.' });
-  }
-  items.push({ title: 'Perfection Without Time Constraints', desc: 'Your session unfolds naturally \u2014 no clock, no rushing. Change outfits, explore locations, enjoy every moment.' });
-  if (svc === 'maternity' || svc === 'boudoir') {
-    items.push({ title: 'Designer Maternity Gown Collection', desc: 'Choose from our curated wardrobe of flowing designer gowns \u2014 fit for your bump, styled to the light, ready for you to wear.' });
-  }
-  if (svc === 'newborn') {
-    items.push({ title: 'Newborn Props &amp; Wraps Provided', desc: 'Baskets, wraps, floral setups, and hand-selected props \u2014 everything styled and ready so you just bring your baby.' });
-  }
-  if (svc === 'senior') {
-    items.push({ title: 'Family Portraits Included', desc: 'Add a family session at the end of your senior shoot \u2014 one experience, two sets of memories.' });
-    items.push({ title: 'Model for a Day', desc: 'The ultimate in fun and privacy. While classmates are in school, your senior gets a full day with us.' });
-  }
-  items.push({ title: 'Private Reveal Appointment', desc: 'An intimate viewing where we unveil your gallery and guide you through selecting artwork designed to become lasting heirlooms.' });
-  items.push({ title: '7\u201310 Business Day Delivery', desc: 'Your curated collection is professionally prepared and ready to be enjoyed in your home \u2014 faster than you\u2019d expect.' });
-  items.push({ title: 'Wall Art Installation &amp; Warranty', desc: 'Every piece includes master retouching, professional installation, and a limited lifetime warranty.' });
-  return items.map((it, i) => `
-    <div class="offer-item">
-      <div class="offer-item-num">${String(i + 1).padStart(2, '0')}</div>
-      <div>
-        <div class="offer-item-title">${it.title}</div>
-        <div class="offer-item-desc">${it.desc}</div>
-      </div>
-    </div>
-  `).join('');
-}
-
-function populateOfferItems() {
-  const el = document.getElementById('offerItemsList');
-  if (el) el.innerHTML = buildOfferItems();
 }
 
 // =====================================================================
@@ -2392,7 +2322,7 @@ function loopToService(newService) {
   const preservedBudget = state.budget;
   state.service = newService; state.dueDateValid = null; state.dueDateReason = null;
   state.dueDateNote = null; state.klavWindowOpens = null; state.timing = null;
-  state.gradYear = null; state.budget = preservedBudget; state.cameFromExperience = false;
+  state.gradYear = null; state.budget = preservedBudget;
 
   if (['maternity','boudoir','newborn'].includes(newService) && preservedDate) {
     state.dueDate = preservedDate;
@@ -2401,7 +2331,7 @@ function loopToService(newService) {
     state.klavWindowOpens = q.klavWindowOpens || null; state.dueDateNote = q.noteHtml || '';
     if (q.valid === 'unqualified') { currentStep = STEPS.length; render(); return; }
     if (preservedBudget === 'yes') { currentStep = STEPS.length; render(); return; }
-    currentStep = STEPS.findIndex(s => s.id === 'budget'); render(); return;
+    currentStep = STEPS.findIndex(s => s.id === 'investment'); render(); return;
   }
   if (['maternity','boudoir','newborn'].includes(newService)) {
     state.dueDate = null;
@@ -2417,9 +2347,9 @@ function renderMaternityUnmatch(content) {
 
   let newbornQualifies = false;
   if (state.dueDate) {
-    const fa2 = firstAvailableDate();
+    const fa2    = firstAvailableDate();
     const july19 = new Date(fa2.getFullYear(), 6, 19);
-    const due2 = new Date(state.dueDate + 'T12:00:00');
+    const due2   = new Date(state.dueDate + 'T12:00:00');
     newbornQualifies = due2 > july19;
   }
   const newbornCard = newbornQualifies ? `
@@ -2436,7 +2366,6 @@ function renderMaternityUnmatch(content) {
       <p class="result-eyebrow">A note on timing</p>
       <h2 class="result-headline">We wish we could <em>make it work.</em></h2>
       <p class="result-body">Maternity sessions are photographed between 22 and 32 weeks. Based on your due date, that window doesn\u2019t align with our current availability \u2014 but there are still beautiful options for your family.</p>
-
       <div class="explore-section">
         <span class="explore-label">What\u2019s available for you</span>
         <div class="explore-cards">
@@ -2450,16 +2379,14 @@ function renderMaternityUnmatch(content) {
           </button>
         </div>
       </div>
-
       <div class="inquire">
         <div class="inquire-row">
           <a href="${SMS_HREF}" class="contact-link primary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            Text Us · ${PHONE_DISPLAY}
+            Text Us \u00b7 ${PHONE_DISPLAY}
           </a>
         </div>
       </div>
-
       <button class="start-over" onclick="startOver()" type="button">\u21ba Start over</button>
     </div>
   `;
@@ -2473,7 +2400,6 @@ function renderNewbornUnmatch(content) {
       <p class="result-eyebrow">A note on timing</p>
       <h2 class="result-headline">The timing isn\u2019t quite right \u2014 <em>but we\u2019d love to connect.</em></h2>
       <p class="result-body">We schedule newborn sessions only for babies arriving the last week of July. Your due date doesn\u2019t fall in that window \u2014 but we\u2019d love to photograph your growing family.</p>
-
       <div class="explore-section">
         <span class="explore-label">What\u2019s available for you</span>
         <div class="explore-cards">
@@ -2486,21 +2412,20 @@ function renderNewbornUnmatch(content) {
           </button>
         </div>
       </div>
-
       <div class="inquire">
         <div class="inquire-row">
           <a href="${SMS_HREF}" class="contact-link primary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            Text Us · ${PHONE_DISPLAY}
+            Text Us \u00b7 ${PHONE_DISPLAY}
           </a>
         </div>
       </div>
-
       <button class="start-over" onclick="startOver()" type="button">\u21ba Start over</button>
     </div>
   `;
 }
 
+// Budget unmatch → /specials (not main site)
 function renderBudgetUnmatch(content) {
   document.getElementById('progressShell').style.display = 'none';
   document.getElementById('bottomNav').style.display     = 'none';
@@ -2508,12 +2433,12 @@ function renderBudgetUnmatch(content) {
     <div class="redirect">
       <div class="redirect-card">
         <h2 class="redirect-title">We appreciate your <em style="color:var(--gold);font-style:italic">honesty.</em></h2>
-        <p class="redirect-body">Our sessions start at $1,290 \u2014 and we want to be upfront so you can plan with confidence. When you\u2019re ready to make this investment in yourself or your family, <strong>we\u2019d love to be your photographer.</strong></p>
-        <p class="redirect-body" style="margin-top:12px">In the meantime, explore our work and follow along on Instagram to see what we create together.</p>
+        <p class="redirect-body">Our full sessions start at $1,290 \u2014 but we also offer a curated selection of limited edition sessions at a lower investment. We\u2019d love to show you what\u2019s available.</p>
+        <p class="redirect-body" style="margin-top:12px">Taking you to our <strong>Specials page</strong> now.</p>
       </div>
       <div class="redirect-countdown">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        Taking you to our website in <span style="color:var(--gold);font-weight:500;min-width:14px;display:inline-block" id="countdownNum">${BUDGET_REDIRECT_DELAY}</span> seconds
+        Redirecting in <span style="color:var(--gold);font-weight:500;min-width:14px;display:inline-block" id="countdownNum">${BUDGET_REDIRECT_DELAY}</span> seconds
       </div>
       <button class="start-over" onclick="startOver()" type="button">\u21ba Start over</button>
     </div>
@@ -2531,7 +2456,7 @@ function renderBudgetUnmatch(content) {
           window.parent.postMessage({ type: 'tws-qualify-close', reason: 'budget' }, '*');
         }
       } catch(e) {}
-      window.location.href = MAIN_SITE;
+      window.location.href = SPECIALS_URL;
     }
   }, 1000);
 }
@@ -2544,8 +2469,9 @@ function openQuoteModal(kind) {
   const backdrop = document.getElementById('qmBackdrop');
   const content  = document.getElementById('qmContent');
   let html = '';
+  const svc = state.service || 'beauty';
+
   if (kind === 'jasmine') {
-    const svc = state.service || 'beauty';
     const quote = JASMINE_MOMENTS[svc] || JASMINE_MOMENTS.beauty;
     const photo = jasminePhotoHtml('qm-attr-photo', 56);
     html = `
@@ -2559,29 +2485,26 @@ function openQuoteModal(kind) {
         </div>
       </div>
     `;
-  } else if (kind === 'invest_test') {
-    const svc = state.service || 'beauty';
-    const t = INVEST_TESTIMONIALS[svc] || INVEST_TESTIMONIALS.beauty;
+  } else if (kind === 'exp_test') {
+    const t = EXPERIENCE_TESTIMONIALS[svc] || EXPERIENCE_TESTIMONIALS.beauty;
     const photo = photoHtml(t.key, t.initials, 56, 'qm-attr-photo');
-    // Use the deep testimonial for richer popup content
-    const dt = DEEP_TESTIMONIALS[svc] || DEEP_TESTIMONIALS.beauty;
     html = `
       <span class="qm-eyebrow">From a recent client</span>
-      <p class="qm-quote">${dt.quote}</p>
+      <p class="qm-quote">${t.quote}</p>
       <div class="qm-attr">
         ${photo}
         <div class="qm-attr-body">
-          <span class="qm-attr-name">${dt.name}</span>
-          <span class="qm-attr-ctx">${dt.ctx}</span>
+          <span class="qm-attr-name">${t.name}</span>
+          <span class="qm-attr-ctx">${t.ctx}</span>
         </div>
       </div>
     `;
-  } else if (kind === 'deep_test') {
-    const svc = state.service || 'beauty';
-    const dt = DEEP_TESTIMONIALS[svc] || DEEP_TESTIMONIALS.beauty;
-    const photo = photoHtml(dt.key, dt.initials, 56, 'qm-attr-photo');
+  } else if (kind === 'invest_test') {
+    const t  = INVEST_TESTIMONIALS[svc] || INVEST_TESTIMONIALS.beauty;
+    const dt = EXPERIENCE_TESTIMONIALS[svc] || EXPERIENCE_TESTIMONIALS.beauty;
+    const photo = photoHtml(t.key, t.initials, 56, 'qm-attr-photo');
     html = `
-      <span class="qm-eyebrow">Their experience</span>
+      <span class="qm-eyebrow">From a recent client</span>
       <p class="qm-quote">${dt.quote}</p>
       <div class="qm-attr">
         ${photo}
@@ -2628,8 +2551,8 @@ function goNext() {
     state.klavWindowOpens = q.klavWindowOpens || null;
     if (state.dueDateValid === 'unqualified') { currentStep = STEPS.length; render(); return; }
   }
-  if (step && step.type === 'budget') {
-    if (state.budget === 'no' || state.budget === 'learn') { currentStep = STEPS.length; render(); return; }
+  if (step && step.type === 'investment') {
+    if (state.budget === 'no') { currentStep = STEPS.length; render(); return; }
   }
   if (posNow < active.length - 1) {
     currentStep = active[posNow + 1];
@@ -2645,7 +2568,7 @@ function startOver() {
   state.timing = null; state.gradYear = null; state.budget = null;
   state.firstName = null; state.lastName = null; state.name = null;
   state.email = null; state.phone = null; state.prefMonth = null; state.prefYear = null;
-  state.cameFromExperience = false; forkChoice = 'now';
+  forkChoice = 'now';
   currentStep = -1;
   render();
   scrollToTop();
@@ -2654,8 +2577,8 @@ function startOver() {
 function goBack() {
   if (currentStep === -1) return;
   if (currentStep >= STEPS.length) {
-    const budgetIdx = STEPS.findIndex(s => s.id === 'budget');
-    currentStep = budgetIdx; state.budget = null; state.cameFromExperience = false;
+    const investIdx = STEPS.findIndex(s => s.id === 'investment');
+    currentStep = investIdx; state.budget = null;
     render(); return;
   }
   const active = activeSteps();
@@ -2669,16 +2592,13 @@ function goBack() {
 }
 
 // =====================================================================
-//  TWEAKS PROTOCOL (simple inline — no React)
+//  TWEAKS PROTOCOL
 // =====================================================================
 window.__TWS_TWEAKS = Object.assign({}, window.__TWS_DEFAULTS || {});
 
 function applyTweaks(t) {
   window.__TWS_TWEAKS = Object.assign({}, window.__TWS_TWEAKS, t);
-  if (t.accentGold) {
-    document.documentElement.style.setProperty('--gold', t.accentGold);
-  }
-  // Re-render current screen so toggles like showJasmineMoments take effect
+  if (t.accentGold) document.documentElement.style.setProperty('--gold', t.accentGold);
   render();
 }
 
@@ -2694,88 +2614,61 @@ function buildTweaksPanel() {
   ];
   const panel = document.createElement('div');
   panel.id = 'tws-tweaks';
-  panel.style.cssText = `
-    position: fixed; bottom: 20px; right: 20px; z-index: 1100;
-    background: #fff; border: 1px solid var(--line); border-radius: 12px;
-    box-shadow: 0 30px 60px -20px rgba(26,26,24,0.28), 0 8px 20px -8px rgba(26,26,24,0.18);
-    padding: 18px; width: 280px; font-family: var(--sans); font-size: 13px;
-    transform: translateY(8px); opacity: 0; pointer-events: none;
-    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  `;
+  panel.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:1100;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 30px 60px -20px rgba(26,26,24,0.28),0 8px 20px -8px rgba(26,26,24,0.18);padding:18px;width:280px;font-family:var(--sans);font-size:13px;transform:translateY(8px);opacity:0;pointer-events:none;transition:all 0.3s cubic-bezier(0.22,1,0.36,1)`;
   panel.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div style="font-family:var(--serif);font-size:18px;color:var(--ink)">Tweaks</div>
-      <button id="tweaks-close" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:4px" aria-label="Close">
+      <button id="tweaks-close" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:4px">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
     </div>
-
     <div style="margin-bottom:16px">
       <div style="font-size:9.5px;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Accent</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${accents.map(a => `
-          <button class="tweak-color" data-v="${a.v}" title="${a.n}"
-            style="width:28px;height:28px;border-radius:50%;border:${t.accentGold === a.v ? '2px solid var(--ink)' : '1px solid var(--line)'};background:${a.v};cursor:pointer;padding:0"></button>
-        `).join('')}
+        ${accents.map(a => `<button class="tweak-color" data-v="${a.v}" title="${a.n}" style="width:28px;height:28px;border-radius:50%;border:${t.accentGold===a.v?'2px solid var(--ink)':'1px solid var(--line)'};background:${a.v};cursor:pointer;padding:0"></button>`).join('')}
       </div>
     </div>
-
     <div style="margin-bottom:14px">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-        <input type="checkbox" id="tw-jasmine" ${t.showJasmineMoments !== false ? 'checked' : ''}>
+        <input type="checkbox" id="tw-jasmine" ${t.showJasmineMoments!==false?'checked':''}>
         <span style="font-size:13px;color:var(--ink)">Show Jasmine moments</span>
       </label>
     </div>
-
     <div style="margin-bottom:14px">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-        <input type="checkbox" id="tw-modal" ${t.modalQuotes !== false ? 'checked' : ''}>
+        <input type="checkbox" id="tw-modal" ${t.modalQuotes!==false?'checked':''}>
         <span style="font-size:13px;color:var(--ink)">Pop-up quote modals</span>
       </label>
     </div>
-
     <div>
       <div style="font-size:9.5px;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Motion</div>
       <div style="display:flex;gap:6px">
-        ${['minimal','considered','cinematic'].map(m => `
-          <button class="tweak-motion" data-v="${m}"
-            style="flex:1;padding:8px;border:1px solid var(--line);background:${t.motionLevel === m ? 'var(--ink)' : '#fff'};color:${t.motionLevel === m ? '#fff' : 'var(--muted)'};border-radius:4px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;font-family:inherit">
-            ${m}
-          </button>
-        `).join('')}
+        ${['minimal','considered','cinematic'].map(m=>`<button class="tweak-motion" data-v="${m}" style="flex:1;padding:8px;border:1px solid var(--line);background:${t.motionLevel===m?'var(--ink)':'#fff'};color:${t.motionLevel===m?'#fff':'var(--muted)'};border-radius:4px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;font-family:inherit">${m}</button>`).join('')}
       </div>
     </div>
   `;
   document.body.appendChild(panel);
-
-  // Wire up handlers
-  panel.querySelector('#tweaks-close').addEventListener('click', () => closeTweaks());
-  panel.querySelectorAll('.tweak-color').forEach(b => {
-    b.addEventListener('click', () => {
-      const v = b.getAttribute('data-v');
-      applyTweaks({ accentGold: v });
-      window.parent.postMessage({type:'__edit_mode_set_keys', edits:{accentGold: v}}, '*');
-      rebuildTweaksPanel();
-    });
-  });
+  panel.querySelector('#tweaks-close').addEventListener('click', closeTweaks);
+  panel.querySelectorAll('.tweak-color').forEach(b => b.addEventListener('click', () => {
+    const v = b.getAttribute('data-v');
+    applyTweaks({ accentGold: v });
+    try { window.parent.postMessage({type:'__edit_mode_set_keys',edits:{accentGold:v}},'*'); } catch(e){}
+    rebuildTweaksPanel();
+  }));
   panel.querySelector('#tw-jasmine').addEventListener('change', e => {
-    const v = e.target.checked;
-    applyTweaks({ showJasmineMoments: v });
-    window.parent.postMessage({type:'__edit_mode_set_keys', edits:{showJasmineMoments: v}}, '*');
+    applyTweaks({ showJasmineMoments: e.target.checked });
+    try { window.parent.postMessage({type:'__edit_mode_set_keys',edits:{showJasmineMoments:e.target.checked}},'*'); } catch(e){}
   });
   panel.querySelector('#tw-modal').addEventListener('change', e => {
-    const v = e.target.checked;
-    applyTweaks({ modalQuotes: v });
-    window.parent.postMessage({type:'__edit_mode_set_keys', edits:{modalQuotes: v}}, '*');
+    applyTweaks({ modalQuotes: e.target.checked });
+    try { window.parent.postMessage({type:'__edit_mode_set_keys',edits:{modalQuotes:e.target.checked}},'*'); } catch(e){}
   });
-  panel.querySelectorAll('.tweak-motion').forEach(b => {
-    b.addEventListener('click', () => {
-      const v = b.getAttribute('data-v');
-      applyTweaks({ motionLevel: v });
-      window.parent.postMessage({type:'__edit_mode_set_keys', edits:{motionLevel: v}}, '*');
-      rebuildTweaksPanel();
-    });
-  });
+  panel.querySelectorAll('.tweak-motion').forEach(b => b.addEventListener('click', () => {
+    const v = b.getAttribute('data-v');
+    applyTweaks({ motionLevel: v });
+    try { window.parent.postMessage({type:'__edit_mode_set_keys',edits:{motionLevel:v}},'*'); } catch(e){}
+    rebuildTweaksPanel();
+  }));
   return panel;
 }
 
@@ -2783,41 +2676,24 @@ function rebuildTweaksPanel() {
   const old = document.getElementById('tws-tweaks');
   if (old) old.remove();
   const p = buildTweaksPanel();
-  requestAnimationFrame(() => {
-    p.style.transform = 'translateY(0)';
-    p.style.opacity = '1';
-    p.style.pointerEvents = 'auto';
-  });
+  requestAnimationFrame(() => { p.style.transform='translateY(0)'; p.style.opacity='1'; p.style.pointerEvents='auto'; });
 }
-
-function openTweaks() {
-  tweaksOpen = true;
-  rebuildTweaksPanel();
-}
+function openTweaks()  { tweaksOpen = true;  rebuildTweaksPanel(); }
 function closeTweaks() {
   tweaksOpen = false;
   const old = document.getElementById('tws-tweaks');
-  if (old) {
-    old.style.transform = 'translateY(8px)';
-    old.style.opacity = '0';
-    old.style.pointerEvents = 'none';
-    setTimeout(() => old.remove(), 300);
-  }
-  try { window.parent.postMessage({type: '__edit_mode_dismissed'}, '*'); } catch(e) {}
+  if (old) { old.style.transform='translateY(8px)'; old.style.opacity='0'; old.style.pointerEvents='none'; setTimeout(()=>old.remove(),300); }
+  try { window.parent.postMessage({type:'__edit_mode_dismissed'},'*'); } catch(e){}
 }
 
-// Tweaks host protocol — register listener BEFORE announcing availability
 window.addEventListener('message', (e) => {
   if (!e.data || !e.data.type) return;
   if (e.data.type === '__activate_edit_mode')   openTweaks();
   if (e.data.type === '__deactivate_edit_mode') closeTweaks();
   if (e.data.type === 'tws-qualify-open')       { currentStep = -1; render(); }
 });
-try { window.parent.postMessage({type: '__edit_mode_available'}, '*'); } catch(e) {}
+try { window.parent.postMessage({type:'__edit_mode_available'},'*'); } catch(e){}
 
-// =====================================================================
-//  POPUP / EMBED SUPPORT
-// =====================================================================
 if (window.self !== window.top || new URLSearchParams(window.location.search).has('popup')) {
   document.body.classList.add('popup-mode');
 }
@@ -2844,7 +2720,6 @@ try {
     currentStep = active[0];
   }
   render();
-  // Apply default accent if set
   if (window.__TWS_TWEAKS && window.__TWS_TWEAKS.accentGold) {
     document.documentElement.style.setProperty('--gold', window.__TWS_TWEAKS.accentGold);
   }
