@@ -1532,10 +1532,19 @@ function qualifyDueDate(dueDateStr) {
   }
 
   if (service === 'newborn') {
-    const due    = new Date(dueDateStr + 'T12:00:00');
-    const july19 = new Date(firstAvail.getFullYear(), 6, 19);
-    if (due > july19) return { valid: 'good' };
-    return { valid: 'unqualified', reason: 'beforeJuly19' };
+    const due      = new Date(dueDateStr + 'T12:00:00');
+    const weeksNow = weeksAlongOnDate(dueDateStr, today);
+    const july19   = new Date(firstAvail.getFullYear(), 6, 19);
+    if (due <= july19) return { valid: 'unqualified', reason: 'beforeJuly19' };
+    if (weeksNow < 20) {
+      const windowOpens = new Date(due.getTime() - 20 * MS_WEEK);
+      return {
+        valid: 'tooEarly', reason: 'newbornTooEarly',
+        klavWindowOpens: windowOpens.toISOString().slice(0, 10),
+        noteHtml: 'You\u2019re still early in your pregnancy \u2014 we\u2019ll reach out around your anatomy scan when it\u2019s the right time to start planning your newborn session.'
+      };
+    }
+    return { valid: 'good' };
   }
   return { valid: 'good' };
 }
