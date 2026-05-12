@@ -1532,17 +1532,8 @@ function qualifyDueDate(dueDateStr) {
   }
 
   if (service === 'newborn') {
-    const due      = new Date(dueDateStr + 'T12:00:00');
-    const weeksNow = weeksAlongOnDate(dueDateStr, today);
-    const july19   = new Date(firstAvail.getFullYear(), 6, 19);
-    if (weeksNow < 22) {
-      const windowOpens = new Date(due.getTime() - 18 * MS_WEEK);
-      return {
-        valid: 'tooEarly', reason: 'newbornTooEarly',
-        klavWindowOpens: windowOpens.toISOString().slice(0, 10),
-        noteHtml: 'Your baby isn\u2019t arriving near our current newborn window. Share your details and we\u2019ll reach out near your anatomy scan \u2014 you may be a great fit for a maternity session instead.'
-      };
-    }
+    const due    = new Date(dueDateStr + 'T12:00:00');
+    const july19 = new Date(firstAvail.getFullYear(), 6, 19);
     if (due > july19) return { valid: 'good' };
     return { valid: 'unqualified', reason: 'beforeJuly19' };
   }
