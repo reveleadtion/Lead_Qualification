@@ -1568,12 +1568,12 @@ function render() {
     const service = state.service;
     const budg    = state.budget;
     const dv      = state.dueDateValid;
-    if (!budg) { currentStep = STEPS.findIndex(s => s.id === 'investment'); render(); return; }
-    if (budg === 'no') { renderBudgetUnmatch(content); return; }
     if (dv === 'unqualified') {
       if (service === 'newborn') { renderNewbornUnmatch(content); return; }
       renderMaternityUnmatch(content); return;
     }
+    if (!budg) { currentStep = STEPS.findIndex(s => s.id === 'investment'); render(); return; }
+    if (budg === 'no') { renderBudgetUnmatch(content); return; }
     if (dv === 'tooEarly')  { renderUnifiedForm(content); return; }
     if (service === 'senior') {
       if (state.gradYear === 'later') { renderUnifiedForm(content); return; }
