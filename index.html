@@ -11,7 +11,7 @@
     })(window, document, "clarity", "script", "wcv1bqhsul");
 </script>
 <!-- END Clarity Analytics -->
-  
+    
 <!-- Vercel Web Analytics -->
 <script>
   window.va = window.va || function () { 
@@ -1474,6 +1474,9 @@ function activeSteps() {
 
 let currentStep = -1;
 
+// A/B test — investment step CTA
+const AB_INVEST_CTA = Math.random() < 0.5 ? 'Claim My Spot' : 'Start My Experience';
+
 // =====================================================================
 //  HELPERS
 // =====================================================================
@@ -1617,7 +1620,7 @@ function render() {
 
   btnBack.style.display = posNow === 0 ? 'none' : '';
   btnNext.disabled = needsSelection(step);
-  btnNextLabel.textContent = posNow === total - 1 ? 'See Your Investment' : 'Continue';
+  btnNextLabel.textContent = posNow === total - 1 ? AB_INVEST_CTA : step.id === 'experience' ? 'See Pricing' : 'Continue';
 
   dotsEl.innerHTML = '';
   active.forEach((stepIdx, i) => {
@@ -2191,6 +2194,7 @@ function buildMaternityProps() {
     '$phone_number_region': 'US', '$source': 'early_optin_embed', 'tws_source': 'early_optin_embed',
     'tws_due_date': dueFmt, 'tws_window_opens_date': winDate, 'tws_week_at_signup': weeksNow,
     'tws_quiz_status': 'early', 'tws_quiz_package': 'whiteGlove', 'tws_result_url': SERVICE_URLS.maternity,
+    'tws_ab_invest_cta': AB_INVEST_CTA,
   };
 }
 function buildSeniorProps() {
@@ -2199,6 +2203,7 @@ function buildSeniorProps() {
     'tws_senior_waitlist': true, 'tws_grad_year': 'spring2028plus', 'tws_grad_label': 'Class of 2028 or Later',
     'tws_session_summer': 'Summer 2027', 'tws_outreach_window': 'winter/spring 2027',
     'tws_outreach_date': '2027-04-01T00:00:00', 'tws_quiz_package': 'whiteglove', 'tws_result_url': SERVICE_URLS.senior,
+    'tws_ab_invest_cta': AB_INVEST_CTA,
   };
 }
 function buildUniversalProps() {
@@ -2208,6 +2213,7 @@ function buildUniversalProps() {
   const props = {
     '$phone_number_region': 'US', '$source': 'qualifier_embed', 'tws_source': 'qualifier_embed',
     'tws_service': svc, 'tws_quiz_package': 'whiteGlove', 'tws_result_url': SERVICE_URLS[svc] || SERVICE_URLS.family,
+    'tws_ab_invest_cta': AB_INVEST_CTA,
   };
   if (prefMonth && prefYear) {
     const sessionStart = new Date(parseInt(prefYear,10), parseInt(prefMonth,10)-1, 1);
@@ -2340,7 +2346,7 @@ async function doSproutSubmit(first, last, email, phone, session, notes, statusE
     const res = await fetch('/api/sprout', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ first, last, email, phone, session, notes })
+      body: JSON.stringify({ first, last, email, phone, session, notes, ab_invest_cta: AB_INVEST_CTA })
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || data.detail || ('Sprout error ' + res.status));
