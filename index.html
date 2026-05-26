@@ -1643,7 +1643,7 @@ function render() {
 function needsSelection(step) {
   if (step.type === 'options')    return !state[step.id];
   if (step.type === 'duedate')    return !state.dueDate;
-  if (step.type === 'investment') return !state.budget;
+  if (step.type === 'investment') return false;
   // experience step: always allow continue
   return false;
 }
@@ -2596,6 +2596,7 @@ function goNext() {
     if (state.dueDateValid === 'unqualified') { currentStep = STEPS.length; render(); return; }
   }
   if (step && step.type === 'investment') {
+    if (!state.budget) state.budget = 'yes';
     if (state.budget === 'no') { currentStep = STEPS.length; render(); return; }
   }
   if (posNow < active.length - 1) {
