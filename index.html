@@ -590,6 +590,55 @@ main {
   border-color: var(--gold-bdr); font-weight: 500;
 }
 
+/* Petite (limited-edition studio) offer card */
+.petite-tag {
+  display: inline-block; font-size: 9.5px; letter-spacing: 0.26em; text-transform: uppercase;
+  color: var(--gold-deep); background: var(--gold-soft); border: 1px solid var(--gold-bdr);
+  padding: 5px 12px; border-radius: 100px; margin-bottom: 16px;
+}
+.petite-title {
+  font-family: var(--serif); font-size: 27px; font-weight: 400; font-style: italic;
+  color: var(--ink); line-height: 1.15; margin-bottom: 4px;
+}
+.petite-sub {
+  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 18px;
+}
+.petite-price-row { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+.petite-regular {
+  font-family: var(--serif); font-size: 26px; font-weight: 300; color: var(--muted);
+  text-decoration: line-through; text-decoration-color: var(--gold); text-decoration-thickness: 1.5px;
+}
+.petite-special {
+  font-family: var(--serif); font-size: clamp(44px, 11vw, 60px); font-weight: 300;
+  line-height: 1; color: var(--ink); letter-spacing: -0.02em;
+}
+.petite-save { font-size: 13px; color: var(--gold-deep); font-weight: 500; margin-bottom: 16px; }
+.petite-save span { text-decoration: line-through; opacity: 0.75; }
+.petite-loc {
+  display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted);
+  margin-bottom: 4px;
+}
+.petite-loc svg { color: var(--gold); flex-shrink: 0; }
+.petite-list { list-style: none; display: flex; flex-direction: column; gap: 11px; margin: 0; padding: 0; }
+.petite-list li {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 13.5px; color: var(--ink-soft); line-height: 1.4;
+}
+.petite-list li svg { color: var(--gold); flex-shrink: 0; margin-top: 1px; }
+.petite-cta {
+  width: 100%; margin-top: 4px; background: var(--ink); color: #fff; border: none;
+  font-family: var(--sans); font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase;
+  font-weight: 500; padding: 18px; border-radius: var(--r-sm); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  transition: opacity 0.3s ease; -webkit-tap-highlight-color: transparent;
+}
+.petite-cta:hover { opacity: 0.88; }
+.petite-book-hint {
+  text-align: center; font-size: 12px; color: var(--muted);
+  margin-top: 12px; font-style: italic;
+}
+
 .invest-divider { height: 1px; background: var(--line); margin: 22px 0 18px; }
 
 .invest-test {
@@ -1248,6 +1297,7 @@ const SERVICE_URLS = {
   senior:    'https://twowildsoulsphotography.com/metro-detroit-senior-photography',
   family:    'https://twowildsoulsphotography.com/metro-detroit-family-photography',
   newborn:   'https://twowildsoulsphotography.com/metro-detroit-newborn-photography',
+  children:  'https://twowildsoulsphotography.com/metro-detroit-family-photography',
   branding:  'https://twowildsoulsphotography.com/metro-detroit-branding-photography',
   beauty:    'https://twowildsoulsphotography.com',
 };
@@ -1311,6 +1361,7 @@ const JASMINE_MOMENTS = {
   newborn:   'I\u2019ve photographed enough babies in their first weeks to know the real pressure isn\u2019t the session \u2014 it\u2019s everything around it. My job is to take that off you completely.',
   senior:    'I\u2019ve watched seniors walk in self-conscious and leave with images that change how they see themselves. That transition \u2014 that\u2019s the whole point of what I do.',
   family:    'The hardest part of family photos is getting everyone relaxed at the same time. That\u2019s my job \u2014 not yours.',
+  children:  'Kids don\u2019t sit still for a camera \u2014 and they shouldn\u2019t have to. The best portraits happen when they\u2019re just being themselves, and that\u2019s exactly what I make room for.',
   branding:  'Most headshots make people look like someone else\u2019s idea of professional. Mine make you look like yourself \u2014 just on your best day.',
   beauty:    'You don\u2019t need a reason to have beautiful photos of yourself. You just need to decide you\u2019re worth it.',
 };
@@ -1321,6 +1372,7 @@ const SENSORIAL_SCENES = {
   newborn:   'Your baby is seven days old and you haven\u2019t slept. You walk in and everything is already arranged \u2014 the wraps, the props, the light. You just sit down.',
   senior:    'The morning of your session, they\u2019re not heading to school. Hair and makeup first \u2014 then we take them somewhere beautiful. By the end of it, they\u2019re standing taller. You can see it in every frame.',
   family:    'The kids are in a good mood because we made it easy for them to be. The outfits are chosen. The location is scouted. There\u2019s nowhere to be but here.',
+  children:  'The little ones arrive and we keep it playful \u2014 no stiff posing, no pressure. We follow their lead, and the real smiles come on their own.',
   branding:  'You walk in with an idea of how you want to look. Jasmine listens, hair & makeup builds it, and the photos come back looking more like you than you expected.',
   beauty:    'You show up. Everything else is already handled \u2014 the styling, the lighting, the direction. The only thing you need to bring is yourself.',
 };
@@ -1331,6 +1383,7 @@ const EXPERIENCE_NARRATIVES = {
   newborn:   'Newborn sessions happen in your home during the first two weeks of life. We bring everything \u2014 wraps, props, setups \u2014 and work entirely around your baby\u2019s rhythm. There\u2019s no timeline to chase. If your baby needs to eat, we pause. If she falls asleep in your arms, that\u2019s the shot.',
   senior:    'Your senior\u2019s session is a full experience, not an hour on a schedule. We begin with hair and makeup, then move through multiple locations and multiple looks. Family portraits are included at the end. What you take home isn\u2019t just images \u2014 it\u2019s a record of exactly who they were right now.',
   family:    'Family sessions are built around making everyone comfortable \u2014 especially the kids. We plan everything: the locations, the timing, the wardrobe guidance. You show up. We take care of the direction, the light, and all the moments in between.',
+  children:  'Children\u2019s sessions are built entirely around your little one\u2019s pace. We plan the wardrobe and setups in advance, then keep things playful and unhurried on the day. You show up \u2014 we handle the direction, the light, and all the in-between moments that make them who they are right now.',
   branding:  'A branding session is a strategic session, not just a headshot. We begin with a consultation on your goals, your audience, and how you want to be perceived. Jasmine and our hair & makeup artist work together to create a polished, authentic look that photographs exactly the way it should.',
   beauty:    'Your session is entirely yours. We begin with a consultation to understand your vision, build the look with hair and makeup, and shoot in a way that\u2019s relaxed and unhurried. You leave with images that feel like you \u2014 on your very best day.',
 };
@@ -1342,6 +1395,7 @@ const EXPERIENCE_TESTIMONIALS = {
   newborn:   { key:'jaclyn_s',    initials:'JS', name:'Jaclyn S.',    ctx:'In-Home Newborn',           quote:'She walked me through the entire day so I knew exactly what to expect and even helped plan outfits down to the jewelry. It made everything feel so easy and stress-free. On the day of the shoot, she was incredible. She took her time making sure we got all the shots we wanted while also being mindful of working with a toddler and a newborn. The whole experience felt calm and enjoyable.' },
   senior:    { key:'karen_s',     initials:'KS', name:'Karen S.',     ctx:'Senior + Family Session',  quote:'The day of the shoot was absolutely flawless\u2026we went from taking pictures at our home, to a local trail, to downtown, and ended at a local lake. What really stood out for our family is how personable, knowledgeable, and professional Jasmine was during the entire experience. The pictures were of superb quality and absolutely stunning.' },
   family:    { key:'jojo_d',      initials:'JD', name:'JoJo D.',      ctx:'Family Session',           quote:'Jasmine was AMAZING! So easy to work with! She even made our children so comfortable and they were laughing and smiling and they generally don\u2019t like taking professional pictures! I would highly recommend her and her services.' },
+  children:  { key:'jojo_d',      initials:'JD', name:'JoJo D.',      ctx:'Children\u2019s Session',       quote:'Jasmine was AMAZING! So easy to work with! She even made our children so comfortable and they were laughing and smiling and they generally don\u2019t like taking professional pictures! I would highly recommend her and her services.' },
   branding:  { key:'paula_b',     initials:'PB', name:'Paula B.',     ctx:'Branding Session',         quote:'She has an incredible ability to make you feel instantly comfortable, guiding you just enough while letting your natural expressions shine through. Nothing felt posed or stiff, she captures moments that truly reflect who you are. When I saw my final photos, I was genuinely blown away. Each image felt warm, authentic, and beautifully composed.' },
   beauty:    { key:'amy_p',       initials:'AP', name:'Amy P.',       ctx:'Portrait Session',         quote:'The entire experience was filled with laughter and fun, making it more than just a photoshoot \u2014 a celebration of being myself. I couldn\u2019t be happier with the incredible photos they captured, and I\u2019ll cherish them forever.' },
 };
@@ -1353,6 +1407,7 @@ const INVEST_TESTIMONIALS = {
   newborn:   { key:'jaclyn_s',   initials:'JS', name:'Jaclyn S.',   ctx:'In-Home Newborn',    quote:'From the start, Jasmine went above and beyond.' },
   senior:    { key:'karen_s',    initials:'KS', name:'Karen S.',    ctx:'Senior Portraits',   quote:'She took so much time with us and made sure everything was perfect. The pictures turned out gorgeous.' },
   family:    { key:'krystal_w',  initials:'KW', name:'Krystal W.',  ctx:'Family Session',     quote:'She is such a wonderful soul \u2014 she was still able to capture beautiful moments despite everything.' },
+  children:  { key:'jojo_d',     initials:'JD', name:'JoJo D.',     ctx:'Children\u2019s Session', quote:'She made our children so comfortable \u2014 they were laughing and smiling, and they generally don\u2019t like taking professional pictures!' },
   branding:  { key:'paula_b',    initials:'PB', name:'Paula B.',    ctx:'Branding Session',   quote:'When I saw my final photos, I was genuinely blown away. Each image felt warm, authentic, and beautifully composed.' },
   beauty:    { key:'amy_p',      initials:'AP', name:'Amy P.',      ctx:'Portrait Session',   quote:'The entire experience was filled with laughter and fun. I couldn\u2019t be happier with the incredible photos they captured.' },
 };
@@ -1375,6 +1430,7 @@ function getNotesPlaceholder() {
     newborn:   'Tell us about your family and your little one arriving soon\u2026',
     senior:    'Tell us about your senior and what this milestone means to your family\u2026',
     family:    'Tell us about your family and what you\u2019d love to capture\u2026',
+    children:  'Tell us about your little one and what you\u2019d love to capture\u2026',
     branding:  'Tell us about your work and how you want to be seen\u2026',
     beauty:    'Tell us a little about yourself and what brought you here\u2026',
   };
@@ -1385,7 +1441,7 @@ function getNotesPlaceholder() {
 //  STATE
 // =====================================================================
 const state = {
-  service: null, dueDate: null, dueDateValid: null, dueDateReason: null,
+  service: null, location: null, dueDate: null, dueDateValid: null, dueDateReason: null,
   klavWindowOpens: null, dueDateNote: '',
   timing: null, gradYear: null, budget: null,
   firstName: null, lastName: null, name: null, email: null, phone: null,
@@ -1397,6 +1453,7 @@ const CHAPTER_LABELS = {
   duedate:     'Timing',
   gradyear:    'Timing',
   timing:      'Calendar',
+  location:    'Setting',
   experience:  'Experience',
   investment:  'Investment',
 };
@@ -1413,8 +1470,9 @@ const STEPS = [
       { value: 'maternity', label: 'Maternity',            sub: 'Fine-art portraits of this season' },
       { value: 'boudoir',   label: 'Boudoir Maternity',    sub: 'Intimate, designer gowns provided' },
       { value: 'newborn',   label: 'Newborn',              sub: 'In your home, the first two weeks' },
-      { value: 'senior',    label: 'Senior Portraits',     sub: 'A full-day experience for the class of \u201926, \u201927, \u201928+' },
+      { value: 'senior',    label: 'High School Seniors',  sub: 'A full-day experience for the class of \u201926, \u201927, \u201928+' },
       { value: 'family',    label: 'Family',               sub: 'The whole family, beautifully directed' },
+      { value: 'children',  label: 'Children',             sub: 'Portraits of the little ones' },
       { value: 'branding',  label: 'Branding / Headshots', sub: 'Strategic portraits for your work' },
       { value: 'beauty',    label: 'Beauty / Other',       sub: 'A milestone, a celebration, just because' },
     ]
@@ -1458,6 +1516,18 @@ const STEPS = [
       opts.push({ value: 'later', label: 'Later / Flexible', sub: 'I\u2019m exploring \u2014 let\u2019s start a conversation' });
       return opts;
     }
+  },
+  // Location preference — shown to every genre except Family.
+  // Studio-only → limited-edition Petite Session pricing; outdoor/on-location → full session pricing.
+  { id: 'location', type: 'options',
+    eyebrow: 'Where we’ll create',
+    label: 'Where are you picturing your session?',
+    hint: 'Some clients love the outdoors woven in; others prefer a pure studio setting. This helps us tailor your experience — and your pricing.',
+    showIf: () => state.service !== 'family',
+    options: [
+      { value: 'outdoor', label: 'Outdoor/On Location & In Studio', sub: 'A blend of outdoor scenery and the studio' },
+      { value: 'studio',  label: 'In Studio Only',                   sub: 'Everything captured in our Rochester studio' },
+    ]
   },
   // Experience step — shown to everyone, builds desire before pricing
   { id: 'experience', type: 'experience' },
@@ -1818,7 +1888,7 @@ function renderExperienceStep(content) {
     { label: 'In-Home Planning Consult',           hi: false },
     { label: 'No Time Constraints',                hi: false },
     { label: 'Private Gallery Reveal',             hi: false },
-    { label: 'In-Studio & Outdoor Locations',      hi: false },
+    { label: state.location === 'studio' ? 'In-Studio Portrait Setting' : 'In-Studio & Outdoor Locations', hi: false },
     { label: 'Wall Art Installation & Warranty',   hi: false },
   ];
   if (svc === 'maternity' || svc === 'boudoir') {
@@ -1893,7 +1963,49 @@ function renderExperienceStep(content) {
 //  INVESTMENT STEP — pricing reveal after desire is built
 //  Two choices only: yes (→ form) or no (→ /specials)
 // =====================================================================
+// Limited-edition "Petite Session" offers — shown when a non-Family genre
+// chooses In-Studio Only. Portrait offer covers every eligible genre;
+// newborn gets its own inclusions.
+const PETITE_OFFERS = {
+  portrait: {
+    title: 'Petite Marathon Day',
+    sub:   'Professional Portrait Photography',
+    regular: '$990',
+    special: '$490',
+    lines: [
+      'One Day Only — limited spots',
+      'Portraits for 1 Person Only',
+      'Complimentary Pro Hair & Makeup',
+      'Up to 45 Min Studio Portrait Session',
+      '2 High-Res Digital Images',
+      'Multiple Wardrobe Changes',
+    ],
+  },
+  newborn: {
+    title: 'Petite Newborn / Milestone',
+    sub:   'Professional Portrait Photography',
+    regular: '$990',
+    special: '$490',
+    lines: [
+      'Mornings Only',
+      'Portraits for Baby Only',
+      '200+ Newborn / Children’s Outfits & Props',
+      'Up to 90 Min Studio Portrait Session',
+      '2 High-Res Digital Images',
+      'Multiple Wardrobe Changes',
+    ],
+  },
+};
+
+function petiteOfferFor(svc) {
+  return svc === 'newborn' ? PETITE_OFFERS.newborn : PETITE_OFFERS.portrait;
+}
+
+// Studio-only leads (any genre except Family) see the limited-edition Petite pricing.
 function renderInvestmentStep(content) {
+  if (state.location === 'studio' && state.service !== 'family') {
+    return renderPetiteInvestment(content);
+  }
   const svc = state.service;
   const t   = INVEST_TESTIMONIALS[svc] || INVEST_TESTIMONIALS.beauty;
   const tImg = photoHtml(t.key, t.initials, 44, 'invest-test-photo');
@@ -1957,6 +2069,50 @@ function renderInvestmentStep(content) {
   `;
 }
 
+function renderPetiteInvestment(content) {
+  const offer = petiteOfferFor(state.service);
+  const check = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+  const lines = offer.lines.map(l => `<li>${check}<span>${l}</span></li>`).join('');
+  content.innerHTML = `
+    <div class="q-screen">
+      <p class="q-eyebrow">Your investment</p>
+      <h2 class="q-headline">A limited edition <em>studio session.</em></h2>
+
+      <div class="invest-card">
+        <span class="petite-tag">Limited Edition Session</span>
+        <h3 class="petite-title">${offer.title}</h3>
+        <p class="petite-sub">${offer.sub}</p>
+
+        <div class="petite-price-row">
+          <span class="petite-regular">${offer.regular}</span>
+          <span class="petite-special">${offer.special}</span>
+        </div>
+        <p class="petite-save">Special pricing — regularly <span>${offer.regular}</span></p>
+
+        <div class="petite-loc">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Downtown Rochester, Michigan
+        </div>
+
+        <div class="invest-divider"></div>
+        <ul class="petite-list">${lines}</ul>
+      </div>
+
+      <button class="petite-cta" onclick="proceedToBooking()" type="button">
+        <span>Book This Session</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+      <p class="petite-book-hint">Limited spots — reserve yours on the next step.</p>
+      <p class="val-msg" id="valMsg"></p>
+    </div>
+  `;
+}
+
+function proceedToBooking() {
+  state.budget = 'yes';
+  goNext();
+}
+
 function selectBudget(value, el) {
   state.budget = value;
   document.querySelectorAll('.opt').forEach(b => b.classList.remove('selected'));
@@ -1979,11 +2135,11 @@ function selectOpt(id, value, el) {
 // =====================================================================
 const SERVICE_LABELS = {
   maternity: 'Maternity', boudoir: 'Maternity', newborn: 'Newborn',
-  senior: "Senior's", family: 'Family', branding: 'Headshots/Branding', beauty: 'Beauty / Milestone',
+  senior: "Senior's", family: 'Family', children: 'Children', branding: 'Headshots/Branding', beauty: 'Beauty / Milestone',
 };
 const SERVICE_DISPLAY = {
   maternity: 'Maternity Session', boudoir: 'Boudoir Maternity Session', newborn: 'Newborn Session',
-  senior: 'Senior Portraits', family: 'Family Session', branding: 'Branding / Headshots', beauty: 'Beauty / Milestone',
+  senior: 'Senior Portraits', family: 'Family Session', children: 'Children’s Session', branding: 'Branding / Headshots', beauty: 'Beauty / Milestone',
 };
 
 function hasFixedRouting() {
@@ -2008,6 +2164,15 @@ function buildAutoNote() {
   if (state.gradYear) {
     const gyLabel = state.gradYear === 'later' ? 'Class of 2028+' : 'Class of 2026/2027';
     parts.push('Grad year: ' + gyLabel);
+  }
+  if (state.location) {
+    parts.push('Location preference: ' + (state.location === 'studio' ? 'In Studio Only' : 'Outdoor/On Location & In Studio'));
+  }
+  // Petite (studio-only) leads are logged in Sprout under the "Petite Session" type,
+  // so preserve the underlying genre here for context.
+  if (state.location === 'studio' && state.service !== 'family') {
+    parts.push('Offer: Petite Session special ($490)');
+    parts.push('Genre interest: ' + (SERVICE_DISPLAY[state.service] || state.service));
   }
   parts.push('Source: qualifier form');
   return parts.join(' | ');
@@ -2306,9 +2471,13 @@ async function submitUnified() {
   state.prefMonth = _myparts[0] || '';
   state.prefYear  = _myparts[1] || '';
 
-  const sessionLabel = SERVICE_LABELS[session] || SERVICE_DISPLAY[session] || session;
+  let sessionLabel = SERVICE_LABELS[session] || SERVICE_DISPLAY[session] || session;
   const svc = state.service;
   const dv  = state.dueDateValid;
+
+  // Studio-only leads booked the limited-edition Petite offer — Sprout must
+  // categorize these as "Petite Session" regardless of the underlying genre.
+  if (state.location === 'studio' && svc !== 'family') sessionLabel = 'Petite Session';
 
   let dest = 'sprout';
   if (['maternity','boudoir','newborn'].includes(svc) && dv === 'tooEarly') {
@@ -2366,7 +2535,7 @@ function loopToService(newService) {
   const preservedBudget = state.budget;
   state.service = newService; state.dueDateValid = null; state.dueDateReason = null;
   state.dueDateNote = null; state.klavWindowOpens = null; state.timing = null;
-  state.gradYear = null; state.budget = preservedBudget;
+  state.gradYear = null; state.budget = preservedBudget; state.location = null;
 
   if (['maternity','boudoir','newborn'].includes(newService) && preservedDate) {
     state.dueDate = preservedDate;
@@ -2608,7 +2777,7 @@ function goNext() {
 }
 
 function startOver() {
-  state.service = null; state.dueDate = null; state.dueDateValid = null;
+  state.service = null; state.location = null; state.dueDate = null; state.dueDateValid = null;
   state.dueDateReason = null; state.dueDateNote = null; state.klavWindowOpens = null;
   state.timing = null; state.gradYear = null; state.budget = null;
   state.firstName = null; state.lastName = null; state.name = null;
