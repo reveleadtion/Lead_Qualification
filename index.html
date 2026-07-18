@@ -1699,10 +1699,9 @@ function render() {
     }
     if (!budg) { currentStep = STEPS.findIndex(s => s.id === 'investment'); render(); return; }
     if (budg === 'no' && !state.petite) {
-      // Studio-only lead → show the $490 Petite in-quiz. Outdoor → hold at $1,290
-      // with a studio switch. Family / anyone else → external Specials page.
-      if (service !== 'family' && state.location === 'studio') { renderPetiteOffer(content); return; }
-      if (service !== 'family' && state.location === 'outdoor') { renderOutdoorHold(content); return; }
+      // Outside budget → redirect to the $490 Petite offer (every genre except
+      // Family). The $490 is studio-only; the card spells out that trade-off.
+      if (service !== 'family') { renderPetiteOffer(content); return; }
       renderBudgetUnmatch(content); return;
     }
     if (dv === 'tooEarly')  { renderUnifiedForm(content); return; }
@@ -2047,13 +2046,8 @@ function petiteOfferFor(svc) {
   return svc === 'newborn' ? PETITE_OFFERS.newborn : PETITE_OFFERS.portrait;
 }
 
-// Eligible for the $490 Petite alternative: every genre except Family.
-function petiteEligible() {
-  return state.service !== 'family' && state.location === 'studio';
-}
-
-// Everyone is qualified against the $1,290 full session first. Studio-only
-// leads who say it's outside budget are then shown the $490 Petite in-quiz.
+// Everyone is qualified against the $1,290 full session first. Leads who say
+// it's outside budget are then redirected to the $490 Petite offer in-quiz.
 function renderInvestmentStep(content) {
   const svc = state.service;
   const t   = INVEST_TESTIMONIALS[svc] || INVEST_TESTIMONIALS.beauty;
@@ -2167,32 +2161,6 @@ function renderPetiteOffer(content) {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
       <p class="petite-book-hint">Submit the form on the next step to book — spots are limited.</p>
-      <button class="start-over" onclick="startOver()" type="button">↺ Start over</button>
-    </div>
-  `;
-}
-
-// Outdoor / on-location lead who says $1,290 is outside budget. Outdoor is a
-// fully-custom, all-inclusive experience and $1,290 is non-negotiable — we hold
-// there and invite a conversation. (No $490 shown: that offer is studio-only and
-// surfacing it here would undercut the anchor.)
-function renderOutdoorHold(content) {
-  document.getElementById('progressShell').style.display = 'none';
-  document.getElementById('bottomNav').style.display     = 'none';
-  content.innerHTML = `
-    <div class="result">
-      <p class="result-eyebrow">A note on investment</p>
-      <h2 class="result-headline">Outdoor + in-studio sessions <em>start at $1,290.</em></h2>
-      <p class="result-body">Our outdoor &amp; in-studio experience is fully custom — flexible dates, your partner and family included, hair &amp; makeup, and the full all-inclusive process from planning through finished artwork. That investment starts at $1,290.</p>
-      <p class="result-body" style="margin-top:12px">If the timing isn’t right just yet, we’d still love to connect — reach out anytime and we’ll help you plan when you’re ready.</p>
-      <div class="inquire">
-        <div class="inquire-row">
-          <a href="${SMS_HREF}" class="contact-link primary">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            Text Us · ${PHONE_DISPLAY}
-          </a>
-        </div>
-      </div>
       <button class="start-over" onclick="startOver()" type="button">↺ Start over</button>
     </div>
   `;
