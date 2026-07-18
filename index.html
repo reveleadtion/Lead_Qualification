@@ -77,6 +77,7 @@ window['__ls_script_url'] = 'https://cdn.livesession.io/track.js';
   --gold-soft: rgba(168,146,90,0.10);
   --gold-bdr:  rgba(168,146,90,0.32);
   --sage:      #7C8A5A;
+  --sale:      #B23A2E;
   --line:      rgba(26,26,24,0.10);
   --line-soft: rgba(26,26,24,0.06);
   --shadow-sm: 0 1px 3px rgba(26,26,24,0.04), 0 1px 2px rgba(26,26,24,0.04);
@@ -597,24 +598,39 @@ main {
   padding: 5px 12px; border-radius: 100px; margin-bottom: 16px;
 }
 .petite-title {
-  font-family: var(--serif); font-size: 27px; font-weight: 400; font-style: italic;
-  color: var(--ink); line-height: 1.15; margin-bottom: 4px;
+  font-family: var(--serif); font-size: 27px; font-weight: 400;
+  color: var(--ink); line-height: 1.12; margin-bottom: 6px; text-wrap: balance;
+}
+.petite-tagline {
+  font-family: var(--serif); font-size: 18px; font-style: italic; color: var(--gold-deep);
+  line-height: 1.2; margin-bottom: 10px;
+  display: inline-block; border-bottom: 1px solid var(--gold-bdr); padding-bottom: 2px;
 }
 .petite-sub {
   font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
-.petite-price-row { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+.petite-incl-lbl {
+  font-family: var(--serif); font-size: 17px; font-style: italic; color: var(--ink-soft);
+  margin-bottom: 14px;
+}
+.petite-price-block { margin-top: 20px; }
+.petite-regular-line {
+  font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+  margin-bottom: 4px;
+}
 .petite-regular {
-  font-family: var(--serif); font-size: 26px; font-weight: 300; color: var(--muted);
-  text-decoration: line-through; text-decoration-color: var(--gold); text-decoration-thickness: 1.5px;
+  font-family: var(--serif); font-weight: 400; color: var(--muted);
+  text-decoration: line-through; text-decoration-color: var(--sale); text-decoration-thickness: 1.5px;
+}
+.petite-special-line {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); font-weight: 500;
 }
 .petite-special {
-  font-family: var(--serif); font-size: clamp(44px, 11vw, 60px); font-weight: 300;
-  line-height: 1; color: var(--ink); letter-spacing: -0.02em;
+  font-family: var(--serif); font-size: clamp(44px, 11vw, 60px); font-weight: 400;
+  line-height: 1; color: var(--sale); letter-spacing: -0.02em;
 }
-.petite-save { font-size: 13px; color: var(--gold-deep); font-weight: 500; margin-bottom: 16px; }
-.petite-save span { text-decoration: line-through; opacity: 0.75; }
 .petite-loc {
   display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted);
   margin-bottom: 4px;
@@ -626,6 +642,23 @@ main {
   font-size: 13.5px; color: var(--ink-soft); line-height: 1.4;
 }
 .petite-list li svg { color: var(--gold); flex-shrink: 0; margin-top: 1px; }
+.petite-tradeoff {
+  margin-top: 18px; padding: 16px 18px;
+  background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-sm);
+}
+.petite-tradeoff-lbl {
+  display: block; font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 10px;
+}
+.petite-tradeoff-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.petite-tradeoff-list li {
+  position: relative; padding-left: 18px;
+  font-size: 12.5px; color: var(--muted); line-height: 1.45;
+}
+.petite-tradeoff-list li::before {
+  content: ''; position: absolute; left: 0; top: 8px;
+  width: 9px; height: 1px; background: var(--muted); opacity: 0.6;
+}
 .petite-cta {
   width: 100%; margin-top: 4px; background: var(--ink); color: #fff; border: none;
   font-family: var(--sans); font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase;
@@ -1441,7 +1474,7 @@ function getNotesPlaceholder() {
 //  STATE
 // =====================================================================
 const state = {
-  service: null, location: null, dueDate: null, dueDateValid: null, dueDateReason: null,
+  service: null, location: null, petite: false, dueDate: null, dueDateValid: null, dueDateReason: null,
   klavWindowOpens: null, dueDateNote: '',
   timing: null, gradYear: null, budget: null,
   firstName: null, lastName: null, name: null, email: null, phone: null,
@@ -1525,8 +1558,8 @@ const STEPS = [
     hint: 'Some clients love the outdoors woven in; others prefer a pure studio setting. This helps us tailor your experience — and your pricing.',
     showIf: () => state.service !== 'family',
     options: [
-      { value: 'outdoor', label: 'On Location & In Studio', sub: 'A blend of everything we offer' },
-      { value: 'studio',  label: 'In Studio Only',                   sub: 'Everything captured in our Rochester studio' },
+      { value: 'outdoor', label: 'Outdoor + In Studio', sub: 'A blend of everything we offer' },
+      { value: 'studio',  label: 'In Studio Only',      sub: 'Everything captured in our Rochester studio' },
     ]
   },
   // Experience step — shown to everyone, builds desire before pricing
@@ -1665,7 +1698,13 @@ function render() {
       renderMaternityUnmatch(content); return;
     }
     if (!budg) { currentStep = STEPS.findIndex(s => s.id === 'investment'); render(); return; }
-    if (budg === 'no') { renderBudgetUnmatch(content); return; }
+    if (budg === 'no' && !state.petite) {
+      // Studio-only lead → show the $490 Petite in-quiz. Outdoor → hold at $1,290
+      // with a studio switch. Family / anyone else → external Specials page.
+      if (service !== 'family' && state.location === 'studio') { renderPetiteOffer(content); return; }
+      if (service !== 'family' && state.location === 'outdoor') { renderOutdoorHold(content); return; }
+      renderBudgetUnmatch(content); return;
+    }
     if (dv === 'tooEarly')  { renderUnifiedForm(content); return; }
     if (service === 'senior') {
       if (state.gradYear === 'later') { renderUnifiedForm(content); return; }
@@ -1963,18 +2002,18 @@ function renderExperienceStep(content) {
 //  INVESTMENT STEP — pricing reveal after desire is built
 //  Two choices only: yes (→ form) or no (→ /specials)
 // =====================================================================
-// Limited-edition "Petite Session" offers — shown when a non-Family genre
-// chooses In-Studio Only. Portrait offer covers every eligible genre;
-// newborn gets its own inclusions.
+// Limited-edition "Petite Session" offers — shown in-quiz as the budget
+// alternative when an In-Studio-Only lead says $1,290 is outside budget.
+// Portrait offer covers every eligible genre; newborn gets its own inclusions.
 const PETITE_OFFERS = {
   portrait: {
-    title: 'Petite Marathon Day',
-    sub:   'Professional Portrait Photography',
+    title:   'Petite Marathon Day',
+    tagline: 'One Day Only',
+    sub:     'Professional Portrait Photography',
     regular: '$990',
     special: '$490',
     lines: [
-      'One Day Only — limited spots',
-      'Portraits for 1 Person Only',
+      'Portraits For 1 Person ONLY',
       'Complimentary Pro Hair & Makeup',
       'Up to 45 Min Studio Portrait Session',
       '2 High-Res Digital Images',
@@ -1982,30 +2021,40 @@ const PETITE_OFFERS = {
     ],
   },
   newborn: {
-    title: 'Petite Newborn / Milestone',
-    sub:   'Professional Portrait Photography',
+    title:   'Petite Newborn / Milestone',
+    tagline: 'Mornings Only',
+    sub:     'Professional Portrait Photography',
     regular: '$990',
     special: '$490',
     lines: [
-      'Mornings Only',
-      'Portraits for Baby Only',
+      'Portraits For Baby ONLY',
       '200+ Newborn / Children’s Outfits & Props',
       'Up to 90 Min Studio Portrait Session',
       '2 High-Res Digital Images',
-      'Multiple Wardrobe Changes',
+      'Newborn: Wrapped Only & Milestone: Up to 2 Outfits',
     ],
   },
 };
+
+// What the $490 gives up vs. the full all-inclusive session — surfaced on the card.
+const PETITE_TRADEOFFS = [
+  'In studio only — no outdoor or on-location',
+  'Scheduled on our studio calendar — dates are limited',
+  'One person only — partner & family not included',
+];
 
 function petiteOfferFor(svc) {
   return svc === 'newborn' ? PETITE_OFFERS.newborn : PETITE_OFFERS.portrait;
 }
 
-// Studio-only leads (any genre except Family) see the limited-edition Petite pricing.
+// Eligible for the $490 Petite alternative: every genre except Family.
+function petiteEligible() {
+  return state.service !== 'family' && state.location === 'studio';
+}
+
+// Everyone is qualified against the $1,290 full session first. Studio-only
+// leads who say it's outside budget are then shown the $490 Petite in-quiz.
 function renderInvestmentStep(content) {
-  if (state.location === 'studio' && state.service !== 'family') {
-    return renderPetiteInvestment(content);
-  }
   const svc = state.service;
   const t   = INVEST_TESTIMONIALS[svc] || INVEST_TESTIMONIALS.beauty;
   const tImg = photoHtml(t.key, t.initials, 44, 'invest-test-photo');
@@ -2069,25 +2118,28 @@ function renderInvestmentStep(content) {
   `;
 }
 
-function renderPetiteInvestment(content) {
+// In-quiz "specials page" — the $490 Petite offer shown to a studio-only lead
+// after they say $1,290 is outside budget. Replaces the old /specials redirect.
+function renderPetiteOffer(content) {
+  document.getElementById('progressShell').style.display = 'none';
+  document.getElementById('bottomNav').style.display     = 'none';
+
   const offer = petiteOfferFor(state.service);
   const check = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
   const lines = offer.lines.map(l => `<li>${check}<span>${l}</span></li>`).join('');
-  content.innerHTML = `
-    <div class="q-screen">
-      <p class="q-eyebrow">Your investment</p>
-      <h2 class="q-headline">A limited edition <em>studio session.</em></h2>
+  const trade = PETITE_TRADEOFFS.map(l => `<li>${l}</li>`).join('');
 
-      <div class="invest-card">
+  content.innerHTML = `
+    <div class="result">
+      <p class="result-eyebrow">A limited edition alternative</p>
+      <h2 class="result-headline">Let’s make this <em>work for you.</em></h2>
+      <p class="result-body">If our full experience isn’t the right fit today, this is our limited edition studio session — a beautiful way to work together at a lower investment.</p>
+
+      <div class="invest-card petite-card">
         <span class="petite-tag">Limited Edition Session</span>
         <h3 class="petite-title">${offer.title}</h3>
+        <p class="petite-tagline">${offer.tagline}</p>
         <p class="petite-sub">${offer.sub}</p>
-
-        <div class="petite-price-row">
-          <span class="petite-regular">${offer.regular}</span>
-          <span class="petite-special">${offer.special}</span>
-        </div>
-        <p class="petite-save">Special pricing — regularly <span>${offer.regular}</span></p>
 
         <div class="petite-loc">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -2095,22 +2147,61 @@ function renderPetiteInvestment(content) {
         </div>
 
         <div class="invest-divider"></div>
+
+        <p class="petite-incl-lbl">What is Included?</p>
         <ul class="petite-list">${lines}</ul>
+
+        <div class="petite-price-block">
+          <p class="petite-regular-line">Regular Price: <span class="petite-regular">${offer.regular}</span></p>
+          <p class="petite-special-line">Special Pricing: <span class="petite-special">${offer.special}</span></p>
+        </div>
       </div>
 
-      <button class="petite-cta" onclick="proceedToBooking()" type="button">
-        <span>Book This Session</span>
+      <div class="petite-tradeoff">
+        <span class="petite-tradeoff-lbl">What’s different from our full session</span>
+        <ul class="petite-tradeoff-list">${trade}</ul>
+      </div>
+
+      <button class="petite-cta" onclick="proceedToPetite()" type="button">
+        <span>Book Now</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
-      <p class="petite-book-hint">Limited spots — reserve yours on the next step.</p>
-      <p class="val-msg" id="valMsg"></p>
+      <p class="petite-book-hint">Submit the form on the next step to book — spots are limited.</p>
+      <button class="start-over" onclick="startOver()" type="button">↺ Start over</button>
     </div>
   `;
 }
 
-function proceedToBooking() {
-  state.budget = 'yes';
-  goNext();
+// Outdoor / on-location lead who says $1,290 is outside budget. Outdoor is a
+// fully-custom, all-inclusive experience and $1,290 is non-negotiable — we hold
+// there and invite a conversation. (No $490 shown: that offer is studio-only and
+// surfacing it here would undercut the anchor.)
+function renderOutdoorHold(content) {
+  document.getElementById('progressShell').style.display = 'none';
+  document.getElementById('bottomNav').style.display     = 'none';
+  content.innerHTML = `
+    <div class="result">
+      <p class="result-eyebrow">A note on investment</p>
+      <h2 class="result-headline">Outdoor + in-studio sessions <em>start at $1,290.</em></h2>
+      <p class="result-body">Our outdoor &amp; in-studio experience is fully custom — flexible dates, your partner and family included, hair &amp; makeup, and the full all-inclusive process from planning through finished artwork. That investment starts at $1,290.</p>
+      <p class="result-body" style="margin-top:12px">If the timing isn’t right just yet, we’d still love to connect — reach out anytime and we’ll help you plan when you’re ready.</p>
+      <div class="inquire">
+        <div class="inquire-row">
+          <a href="${SMS_HREF}" class="contact-link primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Text Us · ${PHONE_DISPLAY}
+          </a>
+        </div>
+      </div>
+      <button class="start-over" onclick="startOver()" type="button">↺ Start over</button>
+    </div>
+  `;
+}
+
+// Accept the $490 Petite offer → continue to the contact form.
+function proceedToPetite() {
+  state.petite = true;
+  render();
 }
 
 function selectBudget(value, el) {
@@ -2166,11 +2257,11 @@ function buildAutoNote() {
     parts.push('Grad year: ' + gyLabel);
   }
   if (state.location) {
-    parts.push('Location preference: ' + (state.location === 'studio' ? 'In Studio Only' : 'Outdoor/On Location & In Studio'));
+    parts.push('Location preference: ' + (state.location === 'studio' ? 'In Studio Only' : 'Outdoor + In Studio'));
   }
-  // Petite (studio-only) leads are logged in Sprout under the "Petite Session" type,
+  // Petite leads are logged in Sprout under the "Petite Session" type,
   // so preserve the underlying genre here for context.
-  if (state.location === 'studio' && state.service !== 'family') {
+  if (state.petite) {
     parts.push('Offer: Petite Session special ($490)');
     parts.push('Genre interest: ' + (SERVICE_DISPLAY[state.service] || state.service));
   }
@@ -2475,9 +2566,9 @@ async function submitUnified() {
   const svc = state.service;
   const dv  = state.dueDateValid;
 
-  // Studio-only leads booked the limited-edition Petite offer — Sprout must
-  // categorize these as "Petite Session" regardless of the underlying genre.
-  if (state.location === 'studio' && svc !== 'family') sessionLabel = 'Petite Session';
+  // Leads who booked the limited-edition Petite offer — Sprout must categorize
+  // these as "Petite Session" regardless of the underlying genre.
+  if (state.petite) sessionLabel = 'Petite Session';
 
   let dest = 'sprout';
   if (['maternity','boudoir','newborn'].includes(svc) && dv === 'tooEarly') {
@@ -2535,7 +2626,7 @@ function loopToService(newService) {
   const preservedBudget = state.budget;
   state.service = newService; state.dueDateValid = null; state.dueDateReason = null;
   state.dueDateNote = null; state.klavWindowOpens = null; state.timing = null;
-  state.gradYear = null; state.budget = preservedBudget; state.location = null;
+  state.gradYear = null; state.budget = preservedBudget; state.location = null; state.petite = false;
 
   if (['maternity','boudoir','newborn'].includes(newService) && preservedDate) {
     state.dueDate = preservedDate;
@@ -2777,7 +2868,7 @@ function goNext() {
 }
 
 function startOver() {
-  state.service = null; state.location = null; state.dueDate = null; state.dueDateValid = null;
+  state.service = null; state.location = null; state.petite = false; state.dueDate = null; state.dueDateValid = null;
   state.dueDateReason = null; state.dueDateNote = null; state.klavWindowOpens = null;
   state.timing = null; state.gradYear = null; state.budget = null;
   state.firstName = null; state.lastName = null; state.name = null;
@@ -2792,7 +2883,7 @@ function goBack() {
   if (currentStep === -1) return;
   if (currentStep >= STEPS.length) {
     const investIdx = STEPS.findIndex(s => s.id === 'investment');
-    currentStep = investIdx; state.budget = null;
+    currentStep = investIdx; state.budget = null; state.petite = false;
     render(); return;
   }
   const active = activeSteps();
