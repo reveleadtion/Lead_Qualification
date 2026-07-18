@@ -1558,8 +1558,8 @@ const STEPS = [
     hint: 'Some clients love the outdoors woven in; others prefer a pure studio setting. This helps us tailor your experience — and your pricing.',
     showIf: () => state.service !== 'family',
     options: [
-      { value: 'outdoor', label: 'On Location & In Studio', sub: 'A blend of everything we offer' },
-      { value: 'studio',  label: 'In Studio Only',                   sub: 'Everything captured in our Rochester studio' },
+      { value: 'outdoor', label: 'Outdoor + In Studio', sub: 'A blend of everything we offer' },
+      { value: 'studio',  label: 'In Studio Only',      sub: 'Everything captured in our Rochester studio' },
     ]
   },
   // Experience step — shown to everyone, builds desire before pricing
@@ -2172,8 +2172,10 @@ function renderPetiteOffer(content) {
   `;
 }
 
-// Outdoor / on-location lead who says $1,290 is outside budget. Price holds for
-// outdoor, but they can switch to a studio session to unlock the $490 offer.
+// Outdoor / on-location lead who says $1,290 is outside budget. Outdoor is a
+// fully-custom, all-inclusive experience and $1,290 is non-negotiable — we hold
+// there and invite a conversation. (No $490 shown: that offer is studio-only and
+// surfacing it here would undercut the anchor.)
 function renderOutdoorHold(content) {
   document.getElementById('progressShell').style.display = 'none';
   document.getElementById('bottomNav').style.display     = 'none';
@@ -2181,19 +2183,13 @@ function renderOutdoorHold(content) {
     <div class="result">
       <p class="result-eyebrow">A note on investment</p>
       <h2 class="result-headline">Outdoor sessions <em>start at $1,290.</em></h2>
-      <p class="result-body">Our outdoor &amp; on-location experience is fully custom — flexible dates, your partner and family included, and the full all-inclusive process. That investment starts at $1,290.</p>
-      <p class="result-body" style="margin-top:12px">If you’d be open to keeping it <strong>in studio</strong>, we have a limited edition <strong>$490</strong> session available.</p>
-      <div class="exp-btn-group" style="margin-top:20px">
-        <button class="petite-cta" onclick="switchToStudioPetite()" type="button">
-          <span>Show me the $490 studio option</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </button>
-      </div>
+      <p class="result-body">Our outdoor &amp; on-location experience is fully custom — flexible dates, your partner and family included, hair &amp; makeup, and the full all-inclusive process from planning through finished artwork. That investment starts at $1,290.</p>
+      <p class="result-body" style="margin-top:12px">If the timing isn’t right just yet, we’d still love to connect — reach out anytime and we’ll help you plan when you’re ready.</p>
       <div class="inquire">
         <div class="inquire-row">
-          <a href="${SMS_HREF}" class="contact-link outline">
+          <a href="${SMS_HREF}" class="contact-link primary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            Text ${PHONE_DISPLAY}
+            Text Us · ${PHONE_DISPLAY}
           </a>
         </div>
       </div>
@@ -2205,12 +2201,6 @@ function renderOutdoorHold(content) {
 // Accept the $490 Petite offer → continue to the contact form.
 function proceedToPetite() {
   state.petite = true;
-  render();
-}
-
-// From the outdoor-hold screen: switch to a studio Petite offer.
-function switchToStudioPetite() {
-  state.location = 'studio';
   render();
 }
 
@@ -2267,7 +2257,7 @@ function buildAutoNote() {
     parts.push('Grad year: ' + gyLabel);
   }
   if (state.location) {
-    parts.push('Location preference: ' + (state.location === 'studio' ? 'In Studio Only' : 'Outdoor/On Location & In Studio'));
+    parts.push('Location preference: ' + (state.location === 'studio' ? 'In Studio Only' : 'Outdoor + In Studio'));
   }
   // Petite leads are logged in Sprout under the "Petite Session" type,
   // so preserve the underlying genre here for context.
