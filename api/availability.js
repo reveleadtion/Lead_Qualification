@@ -182,11 +182,13 @@ function computeMonths(shootDays, vacationDays, now) {
 // --- handler ----------------------------------------------------------------
 
 export default async function handler(req, res) {
+  // Allow any twowildsoulsphotography.com subdomain (apex, www, contact, …) and
+  // Vercel previews — the marketing-site popup reads this feed cross-origin.
   const origin = req.headers.origin || '';
-  if (origin.endsWith('.vercel.app') ||
-      origin === 'https://contact.twowildsoulsphotography.com' ||
-      origin === 'https://twowildsoulsphotography.com') {
+  if (/^https:\/\/([a-z0-9-]+\.)*twowildsoulsphotography\.com$/.test(origin) ||
+      origin.endsWith('.vercel.app')) {
     res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
