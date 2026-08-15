@@ -1338,6 +1338,55 @@ const SERVICE_URLS = {
 const MAY_SPOTS = 0;
 const SPOTS = { aug: 1, sep: 3, oct: 3};
 
+// Live availability from /api/availability (Google Calendar → shoot-day counts).
+// Stays null until the fetch succeeds; every reader falls back to the hardcoded
+// SPOTS above, so the quiz behaves exactly as before if the API is unset/down.
+let LIVE_AVAIL = null;
+const MONTH_NUM = { may: 5, aug: 8, sep: 9, oct: 10 };
+const FALLBACK_SPOTS = { may: MAY_SPOTS, aug: SPOTS.aug, sep: SPOTS.sep, oct: SPOTS.oct };
+
+// Map a timing option ('aug'/'sep'/'oct'/'may') to a 'YYYY-MM' key, rolling the
+// year forward if that month has already passed this year.
+function monthKeyFor(timing) {
+  const n = MONTH_NUM[timing];
+  if (!n) return null;
+  const now = new Date();
+  const year = n >= (now.getMonth() + 1) ? now.getFullYear() : now.getFullYear() + 1;
+  return year + '-' + String(n).padStart(2, '0');
+}
+
+// Remaining spots for a timing option — live if available, else hardcoded.
+function spotsFor(timing) {
+  const key = monthKeyFor(timing);
+  if (LIVE_AVAIL && key && LIVE_AVAIL[key]) {
+    const m = LIVE_AVAIL[key];
+    return { remaining: m.remaining, full: !!m.full, known: true };
+  }
+  const r = FALLBACK_SPOTS[timing] != null ? FALLBACK_SPOTS[timing] : 0;
+  return { remaining: r, full: r <= 0, known: false };
+}
+
+// Short sub-label for a month option in the timing step.
+function spotSub(timing) {
+  const s = spotsFor(timing);
+  if (s.full) return 'Currently full — ask about openings';
+  return s.remaining + ' spot' + (s.remaining !== 1 ? 's' : '') + ' remaining';
+}
+
+// Fetch live availability, then re-render if the visitor is on the timing step.
+async function loadAvailability() {
+  try {
+    const res = await fetch('/api/availability', { headers: { Accept: 'application/json' } });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data && data.ok && data.months) {
+      LIVE_AVAIL = data.months;
+      const step = STEPS[currentStep];
+      if (step && step.id === 'timing') render();
+    }
+  } catch (e) { /* keep hardcoded fallback */ }
+}
+
 // =====================================================================
 //  PHOTOS CONFIG
 //  ─────────────────────────────────────────────────────────────────────
@@ -1538,14 +1587,14 @@ const STEPS = [
     },
     get options() {
       const opts = [];
-      if (MAY_SPOTS > 0) {
+      if (spotsFor('may').remaining > 0) {
         opts.push({ value: 'may', label: 'May \u2014 last minute',
-          sub: MAY_SPOTS + ' spot' + (MAY_SPOTS > 1 ? 's' : '') + ' remaining this month',
+          sub: spotSub('may') + ' this month',
           mayUrgent: true });
       }
-      opts.push({ value: 'aug',   label: 'August',           sub: SPOTS.aug + ' spots remaining' });
-      opts.push({ value: 'sep',   label: 'September',        sub: SPOTS.sep + ' spots remaining' });
-      opts.push({ value: 'oct',   label: 'October',          sub: SPOTS.oct + ' spots remaining' });
+      opts.push({ value: 'aug',   label: 'August',           sub: spotSub('aug') });
+      opts.push({ value: 'sep',   label: 'September',        sub: spotSub('sep') });
+      opts.push({ value: 'oct',   label: 'October',          sub: spotSub('oct') });
       opts.push({ value: 'later', label: 'Later / Flexible', sub: 'I\u2019m exploring \u2014 let\u2019s start a conversation' });
       return opts;
     }
@@ -2241,12 +2290,15 @@ function getResultCopy() {
   const svc    = state.service;
   const timing = state.timing;
   const dv     = state.dueDateValid;
-  const spotMap = {
-    may: MAY_SPOTS + ' spot' + (MAY_SPOTS > 1 ? 's' : '') + ' remaining in May',
-    aug: SPOTS.aug + ' spots remaining in August',
-    sep: SPOTS.sep + ' spots remaining in September',
-    oct: SPOTS.oct + ' spots remaining in October'
+  const MONTH_LABEL = { may: 'May', aug: 'August', sep: 'September', oct: 'October' };
+  // Live-aware spot phrase for a month; empty when unknown.
+  const spotPhrase = (t) => {
+    if (!MONTH_LABEL[t]) return '';
+    const s = spotsFor(t);
+    if (s.full) return '';
+    return s.remaining + ' spot' + (s.remaining !== 1 ? 's' : '') + ' remaining in ' + MONTH_LABEL[t];
   };
+  const isFull = (t) => MONTH_LABEL[t] ? spotsFor(t).full : false;
   if (svc === 'newborn') {
     return { eyebrow: 'Reserve your conversation', headline: 'Your timing is <em>just right.</em>', body: 'Share your details below and Jasmine will reach out personally to set up a call \u2014 no booking pressure, just a real conversation about your newborn session.', spot: '' };
   }
@@ -2262,10 +2314,19 @@ function getResultCopy() {
   if (svc === 'senior' && state.gradYear === 'soon') {
     return { eyebrow: 'Reserve your conversation', headline: 'Let\u2019s capture <em>this milestone.</em>', body: 'We\u2019d love to work with your senior. Share your details below and Jasmine will be in touch within one business day.', spot: '' };
   }
-  if (timing === 'may') {
-    return { eyebrow: 'Last-minute window', headline: 'Grab this <em>before it\u2019s gone.</em>', body: 'We have a rare last-minute opening this May. Share your details below and we\u2019ll be in touch quickly to lock it in.', spot: spotMap.may };
+  // Month is fully booked \u2014 don't turn them away, offer the waitlist.
+  if (isFull(timing)) {
+    return {
+      eyebrow: 'Our calendar is full',
+      headline: `${MONTH_LABEL[timing]} is <em>fully booked.</em>`,
+      body: `We\u2019re fully booked for ${MONTH_LABEL[timing]} \u2014 but we may still be able to fit you in. Share your details below and Jasmine will personally reach out to see what\u2019s possible.`,
+      spot: '',
+    };
   }
-  const spot = timing ? (spotMap[timing] || '') : '';
+  if (timing === 'may') {
+    return { eyebrow: 'Last-minute window', headline: 'Grab this <em>before it\u2019s gone.</em>', body: 'We have a rare last-minute opening this May. Share your details below and we\u2019ll be in touch quickly to lock it in.', spot: spotPhrase('may') };
+  }
+  const spot = timing ? spotPhrase(timing) : '';
   const body = spot
     ? `We have <strong>${spot}</strong>. Share your details below and Jasmine will be in touch within one business day.`
     : 'We\u2019d love to start the conversation. Share your details below and Jasmine will be in touch personally.';
@@ -2993,6 +3054,7 @@ try {
     currentStep = active[0];
   }
   render();
+  loadAvailability();
   if (window.__TWS_TWEAKS && window.__TWS_TWEAKS.accentGold) {
     document.documentElement.style.setProperty('--gold', window.__TWS_TWEAKS.accentGold);
   }
