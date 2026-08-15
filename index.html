@@ -1342,34 +1342,52 @@ const SERVICE_URLS = {
   beauty:    'https://twowildsoulsphotography.com',
 };
 
-const MAY_SPOTS = 0;
-const SPOTS = { aug: 1, sep: 3, oct: 3};
-
 // Live availability from /api/availability (Google Calendar → shoot-day counts).
-// Stays null until the fetch succeeds; every reader falls back to the hardcoded
-// SPOTS above, so the quiz behaves exactly as before if the API is unset/down.
+// Stays null until the fetch succeeds; every reader falls back to a computed
+// estimate, so the quiz always shows a sensible number if the API is unset/down.
 let LIVE_AVAIL = null;
-const MONTH_NUM = { may: 5, aug: 8, sep: 9, oct: 10 };
-const FALLBACK_SPOTS = { may: MAY_SPOTS, aug: SPOTS.aug, sep: SPOTS.sep, oct: SPOTS.oct };
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const CAPACITY_PER_MONTH = 6;   // shoot days offered per month
+const FALLBACK_PER_WEEK  = 1.5; // when the calendar can't be read, estimate this many openings/week
 
-// Map a timing option ('aug'/'sep'/'oct'/'may') to a 'YYYY-MM' key, rolling the
-// year forward if that month has already passed this year.
-function monthKeyFor(timing) {
-  const n = MONTH_NUM[timing];
-  if (!n) return null;
+// The rolling list of upcoming months shown on the timing step (current + next).
+function upcomingMonthKeys(count) {
   const now = new Date();
-  const year = n >= (now.getMonth() + 1) ? now.getFullYear() : now.getFullYear() + 1;
-  return year + '-' + String(n).padStart(2, '0');
+  const keys = [];
+  let y = now.getFullYear(), m = now.getMonth(); // 0-based
+  for (let i = 0; i < count; i++) {
+    keys.push(y + '-' + String(m + 1).padStart(2, '0'));
+    m++; if (m > 11) { m = 0; y++; }
+  }
+  return keys;
 }
 
-// Remaining spots for a timing option — live if available, else hardcoded.
+// Timing values are 'YYYY-MM' keys (or 'later'). Label = month name for display.
+function monthKeyFor(timing) { return /^\d{4}-\d{2}$/.test(timing || '') ? timing : null; }
+function monthLabelFromKey(key) { return key ? MONTH_NAMES[Number(key.split('-')[1]) - 1] : ''; }
+
+// Fallback openings when the calendar is unreachable: 1.5 sessions/week (rounded
+// up) across the days left in that month, capped at the monthly capacity.
+function fallbackRemaining(key) {
+  const [y, m] = key.split('-').map(Number);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const monthStart = new Date(y, m - 1, 1);
+  const monthEnd   = new Date(y, m, 0);           // last day of the month
+  const start = today > monthStart ? today : monthStart;
+  if (start > monthEnd) return 0;
+  const days  = (monthEnd - start) / 86400000 + 1;
+  return Math.min(CAPACITY_PER_MONTH, Math.ceil(FALLBACK_PER_WEEK * (days / 7)));
+}
+
+// Remaining spots for a timing option — live if available, else the estimate.
 function spotsFor(timing) {
   const key = monthKeyFor(timing);
-  if (LIVE_AVAIL && key && LIVE_AVAIL[key]) {
+  if (!key) return { remaining: 0, full: false, known: false };
+  if (LIVE_AVAIL && LIVE_AVAIL[key]) {
     const m = LIVE_AVAIL[key];
     return { remaining: m.remaining, full: !!m.full, known: true };
   }
-  const r = FALLBACK_SPOTS[timing] != null ? FALLBACK_SPOTS[timing] : 0;
+  const r = fallbackRemaining(key);
   return { remaining: r, full: r <= 0, known: false };
 }
 
@@ -1593,15 +1611,16 @@ const STEPS = [
       return true;
     },
     get options() {
-      const opts = [];
-      if (spotsFor('may').remaining > 0) {
-        opts.push({ value: 'may', label: 'May \u2014 last minute',
-          sub: spotSub('may') + ' this month',
-          mayUrgent: true });
-      }
-      opts.push({ value: 'aug',   label: 'August',           sub: spotSub('aug') });
-      opts.push({ value: 'sep',   label: 'September',        sub: spotSub('sep') });
-      opts.push({ value: 'oct',   label: 'October',          sub: spotSub('oct') });
+      // Rolling window: the current month plus the next two.
+      const opts = upcomingMonthKeys(3).map((key, i) => {
+        const s = spotsFor(key);
+        return {
+          value: key,
+          label: monthLabelFromKey(key) + (i === 0 ? ' \u2014 this month' : ''),
+          sub: spotSub(key),
+          mayUrgent: i === 0 && !s.full && s.remaining > 0 && s.remaining <= 2,
+        };
+      });
       opts.push({ value: 'later', label: 'Later / Flexible', sub: 'I\u2019m exploring \u2014 let\u2019s start a conversation' });
       return opts;
     }
@@ -2312,7 +2331,6 @@ function hasFixedRouting() {
   if (['maternity','boudoir','newborn'].includes(svc)) return true;
   if (svc === 'senior' && state.gradYear === 'later') return true;
   if (svc === 'senior' && state.gradYear === 'soon' && state.timing && state.timing !== 'later') return true;
-  if (state.timing === 'may') return true;
   return false;
 }
 
@@ -2323,8 +2341,8 @@ function buildAutoNote() {
     parts.push('Due date: ' + d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}));
   }
   if (state.timing && state.timing !== 'later') {
-    const map = { may: 'May (last minute)', aug: 'August', sep: 'September', oct: 'October' };
-    parts.push('Preferred timing: ' + (map[state.timing] || state.timing));
+    const key = monthKeyFor(state.timing);
+    parts.push('Preferred timing: ' + (key ? monthLabelFromKey(key) + ' ' + key.split('-')[0] : state.timing));
   }
   if (state.gradYear) {
     const gyLabel = state.gradYear === 'later' ? 'Class of 2028+' : 'Class of 2026/2027';
@@ -2351,15 +2369,15 @@ function getResultCopy() {
   const svc    = state.service;
   const timing = state.timing;
   const dv     = state.dueDateValid;
-  const MONTH_LABEL = { may: 'May', aug: 'August', sep: 'September', oct: 'October' };
   // Live-aware spot phrase for a month; empty when unknown.
   const spotPhrase = (t) => {
-    if (!MONTH_LABEL[t]) return '';
-    const s = spotsFor(t);
+    const key = monthKeyFor(t);
+    if (!key) return '';
+    const s = spotsFor(key);
     if (s.full) return '';
-    return s.remaining + ' spot' + (s.remaining !== 1 ? 's' : '') + ' remaining in ' + MONTH_LABEL[t];
+    return s.remaining + ' spot' + (s.remaining !== 1 ? 's' : '') + ' remaining in ' + monthLabelFromKey(key);
   };
-  const isFull = (t) => MONTH_LABEL[t] ? spotsFor(t).full : false;
+  const isFull = (t) => monthKeyFor(t) ? spotsFor(t).full : false;
   if (svc === 'newborn') {
     return { eyebrow: 'Reserve your conversation', headline: 'Your timing is <em>just right.</em>', body: 'Share your details below and Jasmine will reach out personally to set up a call \u2014 no booking pressure, just a real conversation about your newborn session.', spot: '' };
   }
@@ -2377,15 +2395,13 @@ function getResultCopy() {
   }
   // Month is fully booked \u2014 don't turn them away, offer the waitlist.
   if (isFull(timing)) {
+    const label = monthLabelFromKey(monthKeyFor(timing));
     return {
       eyebrow: 'Our calendar is full',
-      headline: `${MONTH_LABEL[timing]} is <em>fully booked.</em>`,
-      body: `We\u2019re fully booked for ${MONTH_LABEL[timing]} \u2014 but we may still be able to fit you in. Share your details below and Jasmine will personally reach out to see what\u2019s possible.`,
+      headline: `${label} is <em>fully booked.</em>`,
+      body: `We\u2019re fully booked for ${label} \u2014 but we may still be able to fit you in. Share your details below and Jasmine will personally reach out to see what\u2019s possible.`,
       spot: '',
     };
-  }
-  if (timing === 'may') {
-    return { eyebrow: 'Last-minute window', headline: 'Grab this <em>before it\u2019s gone.</em>', body: 'We have a rare last-minute opening this May. Share your details below and we\u2019ll be in touch quickly to lock it in.', spot: spotPhrase('may') };
   }
   const spot = timing ? spotPhrase(timing) : '';
   const body = spot
