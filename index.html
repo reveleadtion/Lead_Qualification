@@ -1668,49 +1668,52 @@ function firstAvailableDate() {
   return thisYearAug1 >= today ? thisYearAug1 : new Date(today.getFullYear() + 1, 7, 1);
 }
 
+// Gestational-age qualification, driven purely by weeks-along today (no seasonal
+// anchors). G = weeks pregnant today; babyAgeWeeks > 0 once baby has arrived.
+//
+//   G < 20            \u2192 too early \u2014 capture as a Klaviyo "reach out later" lead.
+//   20 <= G < 33      \u2192 maternity window \u2014 regular qualification.
+//   33 <= G, baby<=2w \u2192 past maternity; route to Newborn (posed still possible).
+//   baby > 2 weeks    \u2192 past newborn-posed window; route to Family.
+//
+// A 2-week booking buffer is baked into the 33-week cutoff: someone 32 weeks
+// today can still book a maternity session (shot ~2 weeks out at ~34 weeks).
+const MATERNITY_EARLY_WEEKS = 20;  // below this = too early (Klaviyo)
+const MATERNITY_LATE_WEEKS  = 33;  // at/above this = past maternity window
+const NEWBORN_POSED_MAX_AGE = 2;   // baby older than this (weeks) = no posed
+
 function qualifyDueDate(dueDateStr) {
-  const today = new Date(); today.setHours(0,0,0,0);
-  const firstAvail = firstAvailableDate();
+  // Anchor at noon (matching the due-date parse below) so whole-week thresholds
+  // land on the day, not half a day early.
+  const today = new Date(); today.setHours(12,0,0,0);
   const service = state.service;
+  const due = new Date(dueDateStr + 'T12:00:00');
+  const G = weeksAlongOnDate(dueDateStr, today); // gestational weeks today
+  const babyAgeWeeks = G - 40;                   // >0 once born
+
+  // Universally too early to plan \u2192 Klaviyo "reach out later" list.
+  if (G < MATERNITY_EARLY_WEEKS) {
+    const windowOpens = new Date(due.getTime() - MATERNITY_EARLY_WEEKS * MS_WEEK);
+    return {
+      valid: 'tooEarly', reason: 'under20',
+      klavWindowOpens: windowOpens.toISOString().slice(0, 10),
+      noteHtml: 'You\u2019re a little early in your pregnancy for us to lock anything in just yet. Share your details and we\u2019ll reach out around your anatomy scan \u2014 right when the timing is perfect.'
+    };
+  }
 
   if (service === 'maternity' || service === 'boudoir') {
-    const weeksNow    = weeksAlongOnDate(dueDateStr, today);
-    const weeksAtOpen = weeksAlongOnDate(dueDateStr, firstAvail);
-    if (weeksNow >= 32) return { valid: 'unqualified', reason: 'past32' };
-    if (weeksAtOpen >= 32) return { valid: 'unqualified', reason: 'tooEarlyDue' };
-    if (weeksNow < 22) {
-      const due = new Date(dueDateStr + 'T12:00:00');
-      const windowOpens = new Date(due.getTime() - 18 * MS_WEEK);
-      return {
-        valid: 'tooEarly', reason: 'under22Today',
-        klavWindowOpens: windowOpens.toISOString().slice(0, 10),
-        noteHtml: 'You\u2019re a little early in your pregnancy for us to lock anything in just yet. Share your details and we\u2019ll reach out around your anatomy scan \u2014 right when the timing is perfect.'
-      };
-    }
-    const due = new Date(dueDateStr + 'T12:00:00');
-    const sessionStart = new Date(due.getTime() - 32 * MS_WEEK);
-    let noteHtml = '';
-    if (sessionStart < firstAvail) {
-      noteHtml = 'We\u2019re available starting <strong>' + formatDate(firstAvail) + '</strong> \u2014 your window extends well into our available dates.';
-    }
-    return { valid: 'good', noteHtml };
+    if (G < MATERNITY_LATE_WEEKS) return { valid: 'good', noteHtml: '' };
+    // Past the maternity window \u2192 recommend the session that fits.
+    if (babyAgeWeeks <= NEWBORN_POSED_MAX_AGE) return { valid: 'unqualified', reason: 'toNewborn' };
+    return { valid: 'unqualified', reason: 'toFamily' };
   }
 
   if (service === 'newborn') {
-    const due      = new Date(dueDateStr + 'T12:00:00');
-    const weeksNow = weeksAlongOnDate(dueDateStr, today);
-    const july19   = new Date(firstAvail.getFullYear(), 6, 19);
-    if (due <= july19) return { valid: 'unqualified', reason: 'beforeJuly19' };
-    if (weeksNow < 20) {
-      const windowOpens = new Date(due.getTime() - 20 * MS_WEEK);
-      return {
-        valid: 'tooEarly', reason: 'newbornTooEarly',
-        klavWindowOpens: windowOpens.toISOString().slice(0, 10),
-        noteHtml: 'You\u2019re still early in your pregnancy \u2014 we\u2019ll reach out around your anatomy scan when it\u2019s the right time to start planning your newborn session.'
-      };
-    }
-    return { valid: 'good' };
+    // Posed newborn work needs baby to be 2 weeks or younger.
+    if (babyAgeWeeks <= NEWBORN_POSED_MAX_AGE) return { valid: 'good', noteHtml: '' };
+    return { valid: 'unqualified', reason: 'newbornToFamily' };
   }
+
   return { valid: 'good' };
 }
 
@@ -2678,14 +2681,10 @@ function renderMaternityUnmatch(content) {
   document.getElementById('progressShell').style.display = 'none';
   document.getElementById('bottomNav').style.display     = 'none';
 
-  let newbornQualifies = false;
-  if (state.dueDate) {
-    const fa2    = firstAvailableDate();
-    const july19 = new Date(fa2.getFullYear(), 6, 19);
-    const due2   = new Date(state.dueDate + 'T12:00:00');
-    newbornQualifies = due2 > july19;
-  }
-  const newbornCard = newbornQualifies ? `
+  // toNewborn: past 32 weeks but baby is 2 weeks old or younger \u2192 Newborn fits.
+  // toFamily:  baby already older than 2 weeks \u2192 Family fits.
+  const toNewborn = state.dueDateReason === 'toNewborn';
+  const newbornCard = toNewborn ? `
     <button class="explore-card" onclick="loopToService('newborn')" type="button">
       <span class="explore-card-label">When baby arrives</span>
       <span class="explore-card-title">Newborn Session</span>
@@ -2694,11 +2693,18 @@ function renderMaternityUnmatch(content) {
       <svg class="explore-card-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17l10-10M7 7h10v10"/></svg>
     </button>` : '';
 
+  const headline = toNewborn
+    ? 'Your timing is perfect for a <em>newborn session.</em>'
+    : 'Let\u2019s capture your <em>growing family.</em>';
+  const body = toNewborn
+    ? 'Maternity sessions are photographed between 20 and 32 weeks \u2014 you\u2019re just past that window, which means baby is nearly here. A newborn session is the perfect next step.'
+    : 'Maternity sessions are photographed between 20 and 32 weeks. Based on your due date that window has passed \u2014 but we\u2019d love to capture your growing family.';
+
   content.innerHTML = `
     <div class="result">
       <p class="result-eyebrow">A note on timing</p>
-      <h2 class="result-headline">We wish we could <em>make it work.</em></h2>
-      <p class="result-body">Maternity sessions are photographed between 22 and 32 weeks. Based on your due date, that window doesn\u2019t align with our current availability \u2014 but there are still beautiful options for your family.</p>
+      <h2 class="result-headline">${headline}</h2>
+      <p class="result-body">${body}</p>
       <div class="explore-section">
         <span class="explore-label">What\u2019s available for you</span>
         <div class="explore-cards">
@@ -2731,8 +2737,8 @@ function renderNewbornUnmatch(content) {
   content.innerHTML = `
     <div class="result">
       <p class="result-eyebrow">A note on timing</p>
-      <h2 class="result-headline">The timing isn\u2019t quite right \u2014 <em>but we\u2019d love to connect.</em></h2>
-      <p class="result-body">We schedule newborn sessions only for babies arriving the last week of July. Your due date doesn\u2019t fall in that window \u2014 but we\u2019d love to photograph your growing family.</p>
+      <h2 class="result-headline">Let\u2019s capture your <em>growing family.</em></h2>
+      <p class="result-body">Posed newborn sessions are for babies two weeks old or younger, so we can\u2019t promise those poses now \u2014 but we\u2019d love to photograph your family (and we can still do wrapped or lifestyle newborn images, just ask).</p>
       <div class="explore-section">
         <span class="explore-label">What\u2019s available for you</span>
         <div class="explore-cards">
