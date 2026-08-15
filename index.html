@@ -659,6 +659,13 @@ main {
   content: ''; position: absolute; left: 0; top: 8px;
   width: 9px; height: 1px; background: var(--muted); opacity: 0.6;
 }
+.petite-or {
+  display: flex; align-items: center; gap: 14px; margin: 26px 0 18px;
+  color: var(--muted); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+}
+.petite-or::before, .petite-or::after {
+  content: ''; flex: 1; height: 1px; background: var(--line);
+}
 .petite-cta {
   width: 100%; margin-top: 4px; background: var(--ink); color: #fff; border: none;
   font-family: var(--sans); font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase;
@@ -1523,7 +1530,7 @@ function getNotesPlaceholder() {
 //  STATE
 // =====================================================================
 const state = {
-  service: null, location: null, petite: false, dueDate: null, dueDateValid: null, dueDateReason: null,
+  service: null, location: null, petite: false, express: false, dueDate: null, dueDateValid: null, dueDateReason: null,
   klavWindowOpens: null, dueDateNote: '',
   timing: null, gradYear: null, budget: null,
   firstName: null, lastName: null, name: null, email: null, phone: null,
@@ -1750,7 +1757,7 @@ function render() {
       renderMaternityUnmatch(content); return;
     }
     if (!budg) { currentStep = STEPS.findIndex(s => s.id === 'investment'); render(); return; }
-    if (budg === 'no' && !state.petite) {
+    if (budg === 'no' && !state.petite && !state.express) {
       // Outside budget → redirect to the $490 Petite offer (every genre except
       // Family). The $490 is studio-only; the card spells out that trade-off.
       if (service !== 'family') { renderPetiteOffer(content); return; }
@@ -2087,12 +2094,28 @@ const PETITE_OFFERS = {
   },
 };
 
-// What the $490 gives up vs. the full all-inclusive session — surfaced on the card.
+// The difference between the full $1,290 custom experience and the $490 Petite —
+// what you set aside to reach the lower investment. Surfaced on the card.
 const PETITE_TRADEOFFS = [
-  'In studio only — no outdoor or on-location',
-  'Scheduled on our studio calendar — dates are limited',
-  'One person only — partner & family not included',
+  'Outdoor & on-location sessions — Petite is in studio only',
+  'Unlimited time & wardrobe changes — Petite is time-limited',
+  'Physical products & wall art — Petite is digital images only',
 ];
+
+// Branding / Headshots gets a second, lower tier: a single express headshot.
+const EXPRESS_HEADSHOT = {
+  title:   'Express Headshot',
+  tagline: 'In & Out',
+  sub:     'Professional Headshot Photography',
+  regular: '',
+  special: '$190',
+  lines: [
+    'One 15-Minute Studio Session',
+    'One Professional Retouched Image',
+    'One Look — Clean Background',
+    'Perfect for a Single Updated Profile Photo',
+  ],
+};
 
 function petiteOfferFor(svc) {
   return svc === 'newborn' ? PETITE_OFFERS.newborn : PETITE_OFFERS.portrait;
@@ -2166,52 +2189,77 @@ function renderInvestmentStep(content) {
 
 // In-quiz "specials page" — the $490 Petite offer shown to a studio-only lead
 // after they say $1,290 is outside budget. Replaces the old /specials redirect.
+// Render one offer card (Petite or Express). Regular-price line is optional.
+function petiteCardHtml(offer, tagLabel) {
+  const check = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+  const lines = offer.lines.map(l => `<li>${check}<span>${l}</span></li>`).join('');
+  const regularLine = offer.regular
+    ? `<p class="petite-regular-line">Regular Price: <span class="petite-regular">${offer.regular}</span></p>`
+    : '';
+  return `
+    <div class="invest-card petite-card">
+      <span class="petite-tag">${tagLabel}</span>
+      <h3 class="petite-title">${offer.title}</h3>
+      <p class="petite-tagline">${offer.tagline}</p>
+      <p class="petite-sub">${offer.sub}</p>
+      <div class="petite-loc">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Downtown Rochester, Michigan
+      </div>
+      <div class="invest-divider"></div>
+      <p class="petite-incl-lbl">What is Included?</p>
+      <ul class="petite-list">${lines}</ul>
+      <div class="petite-price-block">
+        ${regularLine}
+        <p class="petite-special-line">Special Pricing: <span class="petite-special">${offer.special}</span></p>
+      </div>
+    </div>`;
+}
+
+function petiteCtaHtml(label, fn) {
+  return `
+    <button class="petite-cta" onclick="${fn}()" type="button">
+      <span>${label}</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>`;
+}
+
 function renderPetiteOffer(content) {
   document.getElementById('progressShell').style.display = 'none';
   document.getElementById('bottomNav').style.display     = 'none';
 
   const offer = petiteOfferFor(state.service);
-  const check = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
-  const lines = offer.lines.map(l => `<li>${check}<span>${l}</span></li>`).join('');
   const trade = PETITE_TRADEOFFS.map(l => `<li>${l}</li>`).join('');
+  const isBranding = state.service === 'branding';
+
+  // Branding/Headshots also gets a $190 express-headshot tier below the Petite.
+  const expressBlock = isBranding ? `
+    <div class="petite-or"><span>or, an even simpler option</span></div>
+    ${petiteCardHtml(EXPRESS_HEADSHOT, 'Express Option')}
+    ${petiteCtaHtml('Book the Express Headshot — $190', 'proceedToExpress')}
+  ` : '';
+
+  const intro = isBranding
+    ? 'If our full experience isn’t the right fit today, here are two lower-investment ways to work together.'
+    : 'If our full experience isn’t the right fit today, this is our limited edition studio session — a beautiful way to work together at a lower investment.';
 
   content.innerHTML = `
     <div class="result">
       <p class="result-eyebrow">A limited edition alternative</p>
       <h2 class="result-headline">Let’s make this <em>work for you.</em></h2>
-      <p class="result-body">If our full experience isn’t the right fit today, this is our limited edition studio session — a beautiful way to work together at a lower investment.</p>
+      <p class="result-body">${intro}</p>
 
-      <div class="invest-card petite-card">
-        <span class="petite-tag">Limited Edition Session</span>
-        <h3 class="petite-title">${offer.title}</h3>
-        <p class="petite-tagline">${offer.tagline}</p>
-        <p class="petite-sub">${offer.sub}</p>
-
-        <div class="petite-loc">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          Downtown Rochester, Michigan
-        </div>
-
-        <div class="invest-divider"></div>
-
-        <p class="petite-incl-lbl">What is Included?</p>
-        <ul class="petite-list">${lines}</ul>
-
-        <div class="petite-price-block">
-          <p class="petite-regular-line">Regular Price: <span class="petite-regular">${offer.regular}</span></p>
-          <p class="petite-special-line">Special Pricing: <span class="petite-special">${offer.special}</span></p>
-        </div>
-      </div>
+      ${petiteCardHtml(offer, 'Limited Edition Session')}
 
       <div class="petite-tradeoff">
-        <span class="petite-tradeoff-lbl">What’s different from our full session</span>
+        <span class="petite-tradeoff-lbl">The difference — Custom $1,290 vs. Petite $490</span>
         <ul class="petite-tradeoff-list">${trade}</ul>
       </div>
 
-      <button class="petite-cta" onclick="proceedToPetite()" type="button">
-        <span>Book Now</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </button>
+      ${petiteCtaHtml(isBranding ? 'Book the Petite Session — $490' : 'Book Now', 'proceedToPetite')}
+
+      ${expressBlock}
+
       <p class="petite-book-hint">Submit the form on the next step to book — spots are limited.</p>
       <button class="start-over" onclick="startOver()" type="button">↺ Start over</button>
     </div>
@@ -2221,6 +2269,12 @@ function renderPetiteOffer(content) {
 // Accept the $490 Petite offer → continue to the contact form.
 function proceedToPetite() {
   state.petite = true;
+  render();
+}
+
+// Accept the $190 Express Headshot (Branding) → continue to the contact form.
+function proceedToExpress() {
+  state.express = true;
   render();
 }
 
@@ -2279,10 +2333,14 @@ function buildAutoNote() {
   if (state.location) {
     parts.push('Location preference: ' + (state.location === 'studio' ? 'In Studio Only' : 'Outdoor + In Studio'));
   }
-  // Petite leads are logged in Sprout under the "Petite Session" type,
+  // Petite / Express leads are logged in Sprout under their own type,
   // so preserve the underlying genre here for context.
   if (state.petite) {
     parts.push('Offer: Petite Session special ($490)');
+    parts.push('Genre interest: ' + (SERVICE_DISPLAY[state.service] || state.service));
+  }
+  if (state.express) {
+    parts.push('Offer: Express Headshot special ($190)');
     parts.push('Genre interest: ' + (SERVICE_DISPLAY[state.service] || state.service));
   }
   parts.push('Source: qualifier form');
@@ -2598,9 +2656,10 @@ async function submitUnified() {
   const svc = state.service;
   const dv  = state.dueDateValid;
 
-  // Leads who booked the limited-edition Petite offer — Sprout must categorize
-  // these as "Petite Session" regardless of the underlying genre.
-  if (state.petite) sessionLabel = 'Petite Session';
+  // Leads who booked a special offer — Sprout must categorize these under the
+  // offer's own type regardless of the underlying genre.
+  if (state.petite)  sessionLabel = 'Petite Session';
+  if (state.express) sessionLabel = 'Express Headshot';
 
   let dest = 'sprout';
   if (['maternity','boudoir','newborn'].includes(svc) && dv === 'tooEarly') {
@@ -2658,7 +2717,7 @@ function loopToService(newService) {
   const preservedBudget = state.budget;
   state.service = newService; state.dueDateValid = null; state.dueDateReason = null;
   state.dueDateNote = null; state.klavWindowOpens = null; state.timing = null;
-  state.gradYear = null; state.budget = preservedBudget; state.location = null; state.petite = false;
+  state.gradYear = null; state.budget = preservedBudget; state.location = null; state.petite = false; state.express = false;
 
   if (['maternity','boudoir','newborn'].includes(newService) && preservedDate) {
     state.dueDate = preservedDate;
@@ -2903,7 +2962,7 @@ function goNext() {
 }
 
 function startOver() {
-  state.service = null; state.location = null; state.petite = false; state.dueDate = null; state.dueDateValid = null;
+  state.service = null; state.location = null; state.petite = false; state.express = false; state.dueDate = null; state.dueDateValid = null;
   state.dueDateReason = null; state.dueDateNote = null; state.klavWindowOpens = null;
   state.timing = null; state.gradYear = null; state.budget = null;
   state.firstName = null; state.lastName = null; state.name = null;
@@ -2918,7 +2977,7 @@ function goBack() {
   if (currentStep === -1) return;
   if (currentStep >= STEPS.length) {
     const investIdx = STEPS.findIndex(s => s.id === 'investment');
-    currentStep = investIdx; state.budget = null; state.petite = false;
+    currentStep = investIdx; state.budget = null; state.petite = false; state.express = false;
     render(); return;
   }
   const active = activeSteps();
