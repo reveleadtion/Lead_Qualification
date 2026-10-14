@@ -3129,10 +3129,17 @@ document.addEventListener('click', (e) => {
 //  INIT
 // =====================================================================
 try {
-  const _startParam = new URLSearchParams(window.location.search).get('start');
+  const _params     = new URLSearchParams(window.location.search);
+  const _startParam = _params.get('start');
+  const _svcParam   = _params.get('service');   // Birth Guide deep link: skip the service question
   if (_startParam === '1') {
-    const active = activeSteps();
-    currentStep = active[0];
+    if (['maternity','boudoir','newborn'].includes(_svcParam)) {
+      state.service = _svcParam;
+      currentStep = STEPS.findIndex(s => s.id === 'duedate');
+    } else {
+      const active = activeSteps();
+      currentStep = active[0];
+    }
   }
   render();
   loadAvailability();
