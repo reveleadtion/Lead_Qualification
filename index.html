@@ -2152,6 +2152,12 @@ function petiteOfferFor(svc) {
   return svc === 'newborn' ? PETITE_OFFERS.newborn : PETITE_OFFERS.portrait;
 }
 
+// Full-session starting price. In-home newborn starts higher ($1,490) because
+// of the travel, props, and setup we bring to you; everything else is $1,290.
+function startingPrice() {
+  return (state.service === 'newborn' && state.location === 'home') ? '$1,490' : '$1,290';
+}
+
 // Everyone is qualified against the $1,290 full session first. Leads who say
 // it's outside budget are then redirected to the $490 Petite offer in-quiz.
 function renderInvestmentStep(content) {
@@ -2185,7 +2191,7 @@ function renderInvestmentStep(content) {
       <div class="invest-card">
         <span class="invest-eyebrow">Your investment</span>
         <div class="invest-amount-row">
-          <span class="invest-amount">$1,290</span>
+          <span class="invest-amount">${startingPrice()}</span>
           <span class="invest-amount-label">Starting from</span>
         </div>
         <p class="invest-avg">Average client investment is <strong>around $2,500</strong> \u2014 all-inclusive, no surprises.</p>
@@ -2283,7 +2289,7 @@ function renderPetiteOffer(content) {
       ${petiteCardHtml(offer, 'Limited Edition Session')}
 
       <div class="petite-tradeoff">
-        <span class="petite-tradeoff-lbl">The difference — Custom $1,290 vs. Petite $490</span>
+        <span class="petite-tradeoff-lbl">The difference — Custom ${startingPrice()} vs. Petite $490</span>
         <ul class="petite-tradeoff-list">${trade}</ul>
       </div>
 
