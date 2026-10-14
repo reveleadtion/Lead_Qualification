@@ -1630,12 +1630,24 @@ const STEPS = [
   { id: 'location', type: 'options',
     eyebrow: 'Where we’ll create',
     label: 'Where are you picturing your session?',
-    hint: 'Some clients love the outdoors woven in; others prefer a pure studio setting. This helps us tailor your experience — and your pricing.',
+    get hint() {
+      return state.service === 'newborn'
+        ? 'Newborn sessions are photographed in the comfort of your home or styled in our Rochester studio.'
+        : 'Some clients love the outdoors woven in; others prefer a pure studio setting. This helps us tailor your experience — and your pricing.';
+    },
     showIf: () => state.service !== 'family',
-    options: [
-      { value: 'outdoor', label: 'Outdoor + In Studio', sub: 'A blend of everything we offer' },
-      { value: 'studio',  label: 'In Studio Only',      sub: 'Everything captured in our Rochester studio' },
-    ]
+    get options() {
+      if (state.service === 'newborn') {
+        return [
+          { value: 'home',   label: 'In Your Home', sub: 'We bring everything to you' },
+          { value: 'studio', label: 'In Studio',    sub: 'Styled in our Rochester studio' },
+        ];
+      }
+      return [
+        { value: 'outdoor', label: 'Outdoor + In Studio', sub: 'A blend of everything we offer' },
+        { value: 'studio',  label: 'In Studio Only',      sub: 'Everything captured in our Rochester studio' },
+      ];
+    }
   },
   // Experience step — shown to everyone, builds desire before pricing
   { id: 'experience', type: 'experience' },
@@ -2004,7 +2016,7 @@ function renderExperienceStep(content) {
     { label: 'In-Home Planning Consult',           hi: false },
     { label: 'No Time Constraints',                hi: false },
     { label: 'Private Gallery Reveal',             hi: false },
-    { label: state.location === 'studio' ? 'In-Studio Portrait Setting' : 'In-Studio & Outdoor Locations', hi: false },
+    { label: state.location === 'studio' ? 'In-Studio Portrait Setting' : state.location === 'home' ? 'In-Home Newborn Session' : 'In-Studio & Outdoor Locations', hi: false },
     { label: 'Wall Art Installation & Warranty',   hi: false },
   ];
   if (svc === 'maternity' || svc === 'boudoir') {
@@ -2349,7 +2361,7 @@ function buildAutoNote() {
     parts.push('Grad year: ' + gyLabel);
   }
   if (state.location) {
-    parts.push('Location preference: ' + (state.location === 'studio' ? 'In Studio Only' : 'Outdoor + In Studio'));
+    parts.push('Location preference: ' + (state.location === 'studio' ? 'In Studio Only' : state.location === 'home' ? 'In Home' : 'Outdoor + In Studio'));
   }
   // Petite / Express leads are logged in Sprout under their own type,
   // so preserve the underlying genre here for context.
