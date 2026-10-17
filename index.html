@@ -591,6 +591,20 @@ main {
   border-color: var(--gold-bdr); font-weight: 500;
 }
 
+/* Value-framed inclusions on the investment screen */
+.invest-incl { margin: 22px 0 8px; }
+.invest-incl-lbl {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: 9.5px; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 16px;
+}
+.invest-incl-lbl::before { content: ''; width: 18px; height: 1px; background: var(--gold); }
+.invest-incl ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.invest-incl li { display: flex; gap: 12px; align-items: flex-start; }
+.invest-incl li svg { color: var(--gold); flex-shrink: 0; margin-top: 2px; }
+.invest-incl li strong { display: block; font-size: 14px; font-weight: 500; color: var(--ink); line-height: 1.3; margin-bottom: 2px; }
+.invest-incl li span { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+
 /* Petite (limited-edition studio) offer card */
 .petite-tag {
   display: inline-block; font-size: 9.5px; letter-spacing: 0.26em; text-transform: uppercase;
@@ -2207,14 +2221,19 @@ function renderInvestmentStep(content) {
   const t     = INVEST_TESTIMONIALS[svc] || INVEST_TESTIMONIALS.beauty;
   const tImg  = photoHtml(t.key, t.initials, 44, 'invest-test-photo');
 
-  // A few genre-aware highlights — the essentials, not the full list.
-  const hi = ['Professional Hair & Makeup', 'Fully Guided, Start to Finish', 'Heirloom Artwork Included'];
-  if      (svc === 'maternity' || svc === 'boudoir') hi.push('Designer Gown Collection');
-  else if (svc === 'newborn')  hi.push('Props & Wraps Provided');
-  else if (svc === 'senior')   hi.push('Multiple Looks & Locations');
-  else if (svc === 'branding') hi.push('Strategy Consultation');
-  else hi.push(state.location === 'studio' ? 'Styled In-Studio' : 'Studio & Outdoor Options');
-  const chips = hi.map((c, i) => `<span class="invest-chip${i < 2 ? ' hi' : ''}">${c}</span>`).join('');
+  // Value-framed inclusions \u2014 what the investment actually covers, so the price makes sense.
+  const incl = [
+    ['Full planning & styling', 'We design the whole experience with you before the day.'],
+    ['Professional hair & makeup', 'A pro team on-site, so you feel your absolute best.'],
+    ['A relaxed, fully-guided session', 'Gentle direction the whole way \u2014 no posing stress.'],
+  ];
+  if      (svc === 'maternity' || svc === 'boudoir') incl.push(['Designer gown collection', 'A curated wardrobe of gowns, provided for you.']);
+  else if (svc === 'newborn')  incl.push(['Props, wraps & setups provided', 'Everything for baby, brought to your session.']);
+  else if (svc === 'senior')   incl.push(['Multiple looks & locations', 'A full-day experience, not a rushed hour.']);
+  else if (svc === 'branding') incl.push(['Brand strategy consultation', 'We plan exactly how you want to be seen.']);
+  incl.push(['Heirloom artwork for your home', 'Finished prints, albums & wall art \u2014 yours to keep for generations.']);
+  const check = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+  const inclHtml = incl.map(([h, d]) => `<li>${check}<div><strong>${h}</strong><span>${d}</span></div></li>`).join('');
 
   content.innerHTML = `
     <div class="q-screen">
@@ -2226,7 +2245,10 @@ function renderInvestmentStep(content) {
         <p class="scene-text">\u201c${scene}\u201d</p>
       </div>
 
-      <div class="invest-chips" style="margin:20px 0 6px">${chips}</div>
+      <div class="invest-incl">
+        <span class="invest-incl-lbl">Every session includes</span>
+        <ul>${inclHtml}</ul>
+      </div>
 
       <div class="invest-card">
         <span class="invest-eyebrow">Your investment</span>
@@ -2234,7 +2256,7 @@ function renderInvestmentStep(content) {
           <span class="invest-amount">${startingPrice()}</span>
           <span class="invest-amount-label">Starting from</span>
         </div>
-        <p class="invest-journey">From your first planning call through finished portraits delivered and installed in your home \u2014 every detail is handled for you. All-inclusive, with nothing extra ever required.</p>
+        <p class="invest-journey">Most of what you\u2019re paying for happens before and after the session \u2014 the planning, the artistry, and the finished artwork you keep for a lifetime. All-inclusive, with nothing extra ever required.</p>
 
         <div class="invest-divider"></div>
 
