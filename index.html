@@ -721,6 +721,24 @@ main {
 /* Budget choices */
 .budget-choices { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
 
+/* Quiet secondary opt-out under the pricing reveal */
+.budget-quiet {
+  display: block; width: 100%; text-align: center; margin-top: 18px;
+  background: transparent; border: none; cursor: pointer;
+  font-family: var(--sans); font-size: 12.5px; color: var(--muted);
+  letter-spacing: 0.02em; padding: 10px;
+  text-decoration: underline; text-decoration-color: var(--line);
+  text-underline-offset: 3px; transition: color 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.budget-quiet:hover { color: var(--ink-soft); text-decoration-color: var(--gold-bdr); }
+
+/* Non-interactive headings shouldn't feel tappable (kills stray taps/selection) */
+.intro-headline, .q-headline, .q-eyebrow, .result-headline, .result-eyebrow,
+.scene-eyebrow, .invest-eyebrow, .chosen-label, .jm-eyebrow, .explore-label {
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+}
+
 /* ─────────────────────────  Quote modal  ───────────────────────── */
 .qm-backdrop {
   position: fixed; inset: 0; z-index: 1000;
@@ -995,6 +1013,23 @@ textarea.field { resize: none; min-height: 100px; line-height: 1.6; font-family:
   font-size: 12.5px; color: var(--muted); line-height: 1.55; font-style: italic;
 }
 .jasmine-review-text strong { color: var(--ink-soft); font-weight: 500; font-style: normal; }
+
+/* Birth Guide — no-pressure option for maternity/newborn leads */
+.birthguide {
+  display: flex; align-items: center; gap: 14px;
+  margin-top: 22px; padding: 18px 20px;
+  background: var(--paper); border: 1px solid var(--line);
+  border-left: 2px solid var(--gold);
+  border-radius: var(--r-md); text-decoration: none;
+  transition: all 0.3s ease; -webkit-tap-highlight-color: transparent;
+}
+.birthguide:hover { border-color: var(--gold-bdr); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.birthguide-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.birthguide-eyebrow { font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
+.birthguide-title { font-family: var(--serif); font-size: 18px; font-weight: 400; color: var(--ink); line-height: 1.2; }
+.birthguide-desc { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+.birthguide-arrow { color: var(--gold); flex-shrink: 0; transition: transform 0.3s ease; }
+.birthguide:hover .birthguide-arrow { transform: translate(3px, -3px); }
 
 /* Inquire bar / contact */
 .inquire {
@@ -1324,7 +1359,14 @@ const SMS_HREF      = 'sms:+1' + PHONE_RAW;
 const EMAIL_HREF    = 'mailto:jasmine@twowildsoulsphotography.com';
 const MAIN_SITE     = 'https://twowildsoulsphotography.com';
 const SPECIALS_URL  = 'https://twowildsoulsphotography.com/specials';
+const BIRTH_GUIDE_URL = 'https://twowildsoulsphotography.com/birth-guide/';
 const BUDGET_REDIRECT_DELAY = 8;
+
+// Lightweight funnel instrumentation — fires a Microsoft Clarity custom event
+// if Clarity is present (it's loaded in <head>). Never throws.
+function clarityEvent(name) {
+  try { if (typeof window.clarity === 'function') window.clarity('event', name); } catch (e) {}
+}
 
 const KLAV_PUBLIC         = 'WgMSBs';
 const KLAV_LIST_MATERNITY = 'V3bUGq';
@@ -1649,9 +1691,8 @@ const STEPS = [
       ];
     }
   },
-  // Experience step — shown to everyone, builds desire before pricing
-  { id: 'experience', type: 'experience' },
-  // Investment step — pricing reveal after desire is built
+  // Experience + Investment are now one combined screen (see renderInvestmentStep).
+  // Investment step — the single "experience + pricing" reveal.
   { id: 'investment', type: 'investment' },
 ];
 
@@ -1791,7 +1832,7 @@ function render() {
     if (budg === 'no' && !state.petite && !state.express) {
       // Outside budget → redirect to the $490 Petite offer (every genre except
       // Family). The $490 is studio-only; the card spells out that trade-off.
-      if (service !== 'family') { renderPetiteOffer(content); return; }
+      if (service !== 'family') { renderBudgetSoftIntercept(content); return; }
       renderBudgetUnmatch(content); return;
     }
     if (dv === 'tooEarly')  { renderUnifiedForm(content); return; }
@@ -1818,7 +1859,7 @@ function render() {
 
   btnBack.style.display = posNow === 0 ? 'none' : '';
   btnNext.disabled = needsSelection(step);
-  btnNextLabel.textContent = posNow === total - 1 ? AB_INVEST_CTA : step.id === 'experience' ? 'See Pricing' : 'Continue';
+  btnNextLabel.textContent = posNow === total - 1 ? AB_INVEST_CTA : 'Continue';
 
   dotsEl.innerHTML = '';
   active.forEach((stepIdx, i) => {
@@ -1832,7 +1873,6 @@ function render() {
 
   if      (step.type === 'duedate')    renderDueDateStep(content, step);
   else if (step.type === 'options')    renderOptionsStep(content, step);
-  else if (step.type === 'experience') renderExperienceStep(content);
   else if (step.type === 'investment') renderInvestmentStep(content);
 
   scrollToTop();
@@ -2161,32 +2201,32 @@ function startingPrice() {
 // Everyone is qualified against the $1,290 full session first. Leads who say
 // it's outside budget are then redirected to the $490 Petite offer in-quiz.
 function renderInvestmentStep(content) {
-  const svc = state.service;
-  const t   = INVEST_TESTIMONIALS[svc] || INVEST_TESTIMONIALS.beauty;
-  const tImg = photoHtml(t.key, t.initials, 44, 'invest-test-photo');
+  clarityEvent('pricing_viewed');
+  const svc   = state.service || 'beauty';
+  const scene = SENSORIAL_SCENES[svc] || SENSORIAL_SCENES.beauty;
+  const t     = INVEST_TESTIMONIALS[svc] || INVEST_TESTIMONIALS.beauty;
+  const tImg  = photoHtml(t.key, t.initials, 44, 'invest-test-photo');
 
-  const choices = [
-    { value: 'yes', label: 'That feels right \u2014 let\u2019s talk',   sub: 'Move forward and start the conversation' },
-    { value: 'no',  label: 'That\u2019s outside my budget',              sub: 'We\u2019ll point you to our limited edition sessions' },
-  ];
-  const btns = choices.map(c => {
-    const cls = 'opt' + (state.budget === c.value ? ' selected' : '');
-    return `
-      <button class="${cls}" onclick="selectBudget('${c.value}', this)" type="button">
-        <span class="opt-check"></span>
-        <span class="opt-body">
-          <span class="opt-label">${c.label}</span>
-          <span class="opt-sub">${c.sub}</span>
-        </span>
-        <svg class="opt-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </button>
-    `;
-  }).join('');
+  // A few genre-aware highlights — the essentials, not the full list.
+  const hi = ['Professional Hair & Makeup', 'Fully Guided, Start to Finish', 'Heirloom Artwork Included'];
+  if      (svc === 'maternity' || svc === 'boudoir') hi.push('Designer Gown Collection');
+  else if (svc === 'newborn')  hi.push('Props & Wraps Provided');
+  else if (svc === 'senior')   hi.push('Multiple Looks & Locations');
+  else if (svc === 'branding') hi.push('Strategy Consultation');
+  else hi.push(state.location === 'studio' ? 'Styled In-Studio' : 'Studio & Outdoor Options');
+  const chips = hi.map((c, i) => `<span class="invest-chip${i < 2 ? ' hi' : ''}">${c}</span>`).join('');
 
   content.innerHTML = `
     <div class="q-screen">
-      <p class="q-eyebrow">Your investment</p>
-      <h2 class="q-headline">Here\u2019s what this <em>looks like.</em></h2>
+      <p class="q-eyebrow">Your experience</p>
+      <h2 class="q-headline">Here\u2019s what we\u2019ll create <em>together.</em></h2>
+
+      <div class="scene-card">
+        <span class="scene-eyebrow">What it feels like</span>
+        <p class="scene-text">\u201c${scene}\u201d</p>
+      </div>
+
+      <div class="invest-chips" style="margin:20px 0 6px">${chips}</div>
 
       <div class="invest-card">
         <span class="invest-eyebrow">Your investment</span>
@@ -2194,8 +2234,7 @@ function renderInvestmentStep(content) {
           <span class="invest-amount">${startingPrice()}</span>
           <span class="invest-amount-label">Starting from</span>
         </div>
-        <p class="invest-avg">Average client investment is <strong>around $2,500</strong> \u2014 all-inclusive, no surprises.</p>
-        <p class="invest-journey">From your first planning call through finished portraits delivered and installed in your home \u2014 every detail in between is handled for you. This is your starting investment, all-inclusive — nothing extra is ever required.</p>
+        <p class="invest-journey">From your first planning call through finished portraits delivered and installed in your home \u2014 every detail is handled for you. All-inclusive, with nothing extra ever required.</p>
 
         <div class="invest-divider"></div>
 
@@ -2215,10 +2254,7 @@ function renderInvestmentStep(content) {
         </div>
       </div>
 
-      <h3 style="font-family:var(--serif);font-size:24px;font-weight:300;color:var(--ink);margin-bottom:6px;line-height:1.2;text-wrap:balance">How does this <em style="color:var(--gold);font-style:italic">land for you?</em></h3>
-      <p class="q-hint" style="margin-bottom:16px">There\u2019s no wrong answer \u2014 we\u2019d rather know early.</p>
-
-      <div class="budget-choices">${btns}</div>
+      <button class="budget-quiet" onclick="selectBudget('no', this)" type="button">This is outside my budget right now</button>
       <p class="val-msg" id="valMsg"></p>
     </div>
   `;
@@ -2261,7 +2297,8 @@ function petiteCtaHtml(label, fn) {
     </button>`;
 }
 
-function renderPetiteOffer(content) {
+function renderBudgetSoftIntercept(content) {
+  clarityEvent('budget_objection');
   document.getElementById('progressShell').style.display = 'none';
   document.getElementById('bottomNav').style.display     = 'none';
 
@@ -2273,44 +2310,57 @@ function renderPetiteOffer(content) {
   const expressBlock = isBranding ? `
     <div class="petite-or"><span>or, an even simpler option</span></div>
     ${petiteCardHtml(EXPRESS_HEADSHOT, 'Express Option')}
-    ${petiteCtaHtml('Book the Express Headshot — $190', 'proceedToExpress')}
+    ${petiteCtaHtml('Book the Express Headshot \u2014 $190', 'proceedToExpress')}
   ` : '';
-
-  const intro = isBranding
-    ? 'If our full experience isn’t the right fit today, here are two lower-investment ways to work together.'
-    : 'If our full experience isn’t the right fit today, this is our limited edition studio session — a beautiful way to work together at a lower investment.';
 
   content.innerHTML = `
     <div class="result">
-      <p class="result-eyebrow">A limited edition alternative</p>
-      <h2 class="result-headline">Let’s make this <em>work for you.</em></h2>
-      <p class="result-body">${intro}</p>
+      <p class="result-eyebrow">Before you decide</p>
+      <h2 class="result-headline">Let\u2019s find a way to <em>make this work.</em></h2>
+      <p class="result-body">Most clients who felt the same way still found a way \u2014 and a quick, no-pressure conversation with Jasmine is the best place to start. No obligation at all.</p>
+
+      <button class="petite-cta" onclick="proceedToTalk()" type="button" style="margin-top:4px">
+        <span>Yes \u2014 let\u2019s talk with Jasmine</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+      <p class="petite-book-hint">She reviews every inquiry personally and replies within one business day.</p>
+
+      <div class="petite-or"><span>or, our limited-edition option</span></div>
 
       ${petiteCardHtml(offer, 'Limited Edition Session')}
 
       <div class="petite-tradeoff">
-        <span class="petite-tradeoff-lbl">The difference — Custom ${startingPrice()} vs. Petite $490</span>
+        <span class="petite-tradeoff-lbl">The difference \u2014 Custom ${startingPrice()} vs. Petite $490</span>
         <ul class="petite-tradeoff-list">${trade}</ul>
       </div>
 
-      ${petiteCtaHtml(isBranding ? 'Book the Petite Session — $490' : 'Book Now', 'proceedToPetite')}
+      ${petiteCtaHtml('Book the Petite Session', 'proceedToPetite')}
 
       ${expressBlock}
 
-      <p class="petite-book-hint">Submit the form on the next step to book — spots are limited.</p>
-      <button class="start-over" onclick="startOver()" type="button">↺ Start over</button>
+      <p class="petite-book-hint">Choose an option and you\u2019ll finish on a short form \u2014 spots are limited.</p>
+      <button class="start-over" onclick="startOver()" type="button">\u21ba Start over</button>
     </div>
   `;
 }
 
-// Accept the $490 Petite offer → continue to the contact form.
+// "Let's talk" soft intercept accepted \u2014 continue to the contact form as a full-session lead.
+function proceedToTalk() {
+  clarityEvent('budget_talk_chosen');
+  state.budget = 'yes';
+  render();
+}
+
+// Accept the $490 Petite offer \u2014 continue to the contact form.
 function proceedToPetite() {
+  clarityEvent('petite_selected');
   state.petite = true;
   render();
 }
 
-// Accept the $190 Express Headshot (Branding) → continue to the contact form.
+// Accept the $190 Express Headshot (Branding) \u2014 continue to the contact form.
 function proceedToExpress() {
+  clarityEvent('express_selected');
   state.express = true;
   render();
 }
@@ -2490,6 +2540,18 @@ function renderUnifiedForm(el) {
     </div>
   `;
 
+  // Maternity/newborn who aren't ready to talk → our free Birth Guide (no-pressure).
+  const birthGuideBlock = isPregnancySvc ? `
+    <a class="birthguide" href="${BIRTH_GUIDE_URL}" target="_blank" rel="noopener" onclick="clarityEvent('birthguide_click')">
+      <div class="birthguide-body">
+        <span class="birthguide-eyebrow">Not ready to talk yet?</span>
+        <span class="birthguide-title">Explore our free Birth Guide</span>
+        <span class="birthguide-desc">A no-pressure walkthrough of planning your session, timing, and what to expect — on your own time.</span>
+      </div>
+      <svg class="birthguide-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17l10-10M7 7h10v10"/></svg>
+    </a>
+  ` : '';
+
   el.innerHTML = `
     <div class="result">
       <p class="result-eyebrow">${copy.eyebrow}</p>
@@ -2518,6 +2580,7 @@ function renderUnifiedForm(el) {
         <div id="unified-status"></div>
         ${jasmineReview}
       </div>
+      ${birthGuideBlock}
       <div class="inquire">
         <span class="inquire-label">Or reach us directly</span>
         <div class="inquire-row">
@@ -2664,6 +2727,7 @@ function renderSuccess(message) {
 }
 
 async function submitUnified() {
+  clarityEvent('inquiry_submitted');
   const btn      = document.getElementById('unifiedSubmitBtn');
   const statusEl = document.getElementById('unified-status');
   if (btn) btn.disabled = true;
@@ -2986,6 +3050,7 @@ function goNext() {
   if (step && step.type === 'investment') {
     if (!state.budget) state.budget = 'yes';
     if (state.budget === 'no') { currentStep = STEPS.length; render(); return; }
+    clarityEvent('pricing_accepted');
   }
   if (posNow < active.length - 1) {
     currentStep = active[posNow + 1];
